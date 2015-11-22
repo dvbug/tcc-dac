@@ -33,11 +33,11 @@ class CSVReader(object, metaclass=ABCMeta):
         pass
 
 
-class HeaderCSVReader(CSVReader):
-    __collection__ = 'stn_conf'
+class LineConfigCSVReader(CSVReader):
+    __collection__ = 'line_conf'
 
     def __init__(self, line_no, file):
-        super(HeaderCSVReader, self).__init__(file)
+        super(LineConfigCSVReader, self).__init__(file)
         self.line_no = line_no
         self.load()
 
@@ -81,13 +81,13 @@ class HeaderCSVReader(CSVReader):
     __repr__ = to_string
 
 
-class TrainPlanCSVReader(CSVReader):
-    __collection__ = 'train_plan'
+class PlanScheduleCSVReader(CSVReader):
+    __collection__ = 'plan_schedule'
     COLUMNS = ['line_no', 'date', 'A', 'B', 'trip', 'terminal_stn', 'idx', 'stn_id', 'arr_time', 'dep_time', 'direction'
                ]
 
     def __init__(self, file):
-        super(TrainPlanCSVReader, self).__init__(file)
+        super(PlanScheduleCSVReader, self).__init__(file)
         self.load()
 
     def load(self):

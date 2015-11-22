@@ -28,11 +28,11 @@ class MongodbReader(object, metaclass=ABCMeta):
     def load_frame(self, *args, **kwargs): pass
 
 
-class HeaderMongodbReader(MongodbReader):
-    __collection__ = 'stn_conf'
+class LineConfigMongodbReader(MongodbReader):
+    __collection__ = 'line_conf'
 
     def __init__(self):
-        super(HeaderMongodbReader, self).__init__()
+        super(LineConfigMongodbReader, self).__init__()
 
     def load_frame(self, line_no):
         self.__load_frame__(self.__collection__, {'line_no': line_no})
@@ -60,15 +60,15 @@ class HeaderMongodbReader(MongodbReader):
 
     @staticmethod
     def exists(line_no):
-        return MongodbReader.__exists__(HeaderMongodbReader.__collection__, {'line_no': line_no})
+        return MongodbReader.__exists__(LineConfigMongodbReader.__collection__, {'line_no': line_no})
 
     def get_raw_data(self):
         data = self.data_frame.to_dict(orient='records')
         return data
 
 
-class TrainPlanMongodbReader(MongodbReader):
-    __collection__ = 'train_plan'
+class PlanScheduleMongodbReader(MongodbReader):
+    __collection__ = 'plan_schedule'
     _type = 'PLAN'
 
     def __init__(self):
@@ -76,10 +76,10 @@ class TrainPlanMongodbReader(MongodbReader):
         self._date = None
         self._data_list_result = None
         self._data_frame_result = None
-        self._header_reader = HeaderMongodbReader()
+        self._header_reader = LineConfigMongodbReader()
         self.header = []
         self.ordered_stn = []
-        super(TrainPlanMongodbReader, self).__init__()
+        super(PlanScheduleMongodbReader, self).__init__()
 
     def load_frame(self, line_no, date):
         """
@@ -110,7 +110,7 @@ class TrainPlanMongodbReader(MongodbReader):
         RedisCache.set_redis_data('LINE{}_{}_{}'.format(self._line_no, self._type, self._date), data)
 
     def to_csv(self):
-        file_path = 'static/data/LINE{}_{}_{}.tcsv'.format(self._line_no, self._type, self._date)
+        file_path = 'dac/static/data/LINE{}_{}_{}.tcsv'.format(self._line_no, self._type, self._date)
         self.data_frame_result.to_csv(file_path, index=False)
 
     def _load_header(self, line_no):

@@ -36,9 +36,9 @@ class RedisCache(object, metaclass=ABCMeta):
         return redis_client.exists(key)
 
 
-class MareyDiagramCache(RedisCache):
+class ScheduleCache(RedisCache):
     def __init__(self):
-        super(MareyDiagramCache, self).__init__()
+        super(ScheduleCache, self).__init__()
 
     @staticmethod
     def get_key(line_no, date, plan_or_real='plan'):

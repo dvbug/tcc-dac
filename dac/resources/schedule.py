@@ -1,20 +1,20 @@
 # coding: utf-8
-from flask_restful import Resource, abort
-from . import MareyDiagramMixin
-from ..data_center.cache.redis_cache import MareyDiagramCache
+from flask_restful import Resource
+from . import ScheduleMixin, abort_error_resp
+from ..data_center.cache.redis_cache import ScheduleCache
 
-data_cache = MareyDiagramCache()
+data_cache = ScheduleCache()
 
 
-class TrainMareyDiagramList(Resource, MareyDiagramMixin):
+class ScheduleList(Resource, ScheduleMixin):
 
     def get(self, line_no, date, plan_or_real='plan'):
         self.if_not_exists(line_no, date, plan_or_real)
         data = data_cache.get_raw_data(line_no, date, plan_or_real)
-        return data
+        return data, 200
 
 
-class TrainMareyDiagram(Resource, MareyDiagramMixin):
+class Schedule(Resource, ScheduleMixin):
 
     def get(self, line_no, date, trip, plan_or_real='plan'):
 
@@ -27,6 +27,7 @@ class TrainMareyDiagram(Resource, MareyDiagramMixin):
             data = found_row.to_dict(orient='index')
             # found_row = found_row.iloc(0)[0]
             # data = found_row.to_dict()
-            return data
+            return data, 200
         else:
-            abort(404, lineNo=line_no, date=date, trip=trip, datatype=plan_or_real, message="Resource does not exist.")
+            abort_error_resp(410, lineNo=line_no, date=date, trip=trip,
+                             datatype=plan_or_real, message="Resource does not exist")

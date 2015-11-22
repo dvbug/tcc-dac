@@ -1,21 +1,28 @@
 # coding: utf-8
-from flask_restful import abort
-from ..data_center.cache.redis_cache import MareyDiagramCache
-from ..data_center.database.reader import HeaderMongodbReader
+from flask_restful import abort, request
+from ..data_center.cache.redis_cache import ScheduleCache
+from ..data_center.database.reader import LineConfigMongodbReader
 
 
-class MareyDiagramMixin(object):
+def abort_error_resp(http_status_code, **kwargs):
+    abort(http_status_code,
+          status=http_status_code,
+          url=request.url,
+          **kwargs)
+
+
+class ScheduleMixin(object):
 
     @staticmethod
     def if_not_exists(line_no, date, plan_or_real):
-        key = MareyDiagramCache.get_key(line_no, date, plan_or_real)
-        if not MareyDiagramCache.key_exist(key):
-            abort(404, lineNo=line_no, date=date, datatype=plan_or_real, message="Resource does not exist.")
+        key = ScheduleCache.get_key(line_no, date, plan_or_real)
+        if not ScheduleCache.key_exist(key):
+            abort_error_resp(410, lineNo=line_no, date=date, datatype=plan_or_real, message="Resource does not exist")
 
 
-class LineHeaderConfigMixin(object):
+class LineConfigMixin(object):
 
     @staticmethod
     def if_not_exists(line_no):
-        if not HeaderMongodbReader().exists(line_no):
-            abort(404, line_no=line_no, message="Resource does not exist.")
+        if not LineConfigMongodbReader().exists(line_no):
+            abort_error_resp(410, line_no=line_no, message="Resource does not exist")

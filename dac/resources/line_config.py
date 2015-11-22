@@ -1,10 +1,10 @@
 # coding: utf-8
 from flask_restful import Resource, reqparse
-from ..data_center.database.reader import HeaderMongodbReader
-from ..data_center.csv.reader import HeaderCSVReader
-from . import LineHeaderConfigMixin
+from ..data_center.database.reader import LineConfigMongodbReader
+from ..data_center.csv.reader import LineConfigCSVReader
+from . import LineConfigMixin
 
-_header_mongodb_reader = HeaderMongodbReader()
+_header_mongodb_reader = LineConfigMongodbReader()
 
 post_parser = reqparse.RequestParser()
 post_parser.add_argument(
@@ -15,7 +15,7 @@ post_parser.add_argument(
 )
 
 
-class LineHeaderConfig(Resource, LineHeaderConfigMixin):
+class LineConfig(Resource, LineConfigMixin):
     def get(self, line_no):
         _header_mongodb_reader.load_frame(line_no)
 
@@ -30,5 +30,5 @@ class LineHeaderConfig(Resource, LineHeaderConfigMixin):
         full_file_name = 'static/config/{}'.format(file_name)
         file.save(full_file_name)
 
-        header_reader = HeaderCSVReader(line_no,full_file_name)
+        header_reader = LineConfigCSVReader(line_no,full_file_name)
         header_reader.to_mongodb()
