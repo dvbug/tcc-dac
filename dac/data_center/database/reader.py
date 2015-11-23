@@ -16,7 +16,10 @@ class MongodbReader(object, metaclass=ABCMeta):
         _collection = db[collection]
         ret = list(_collection.find(*args, **kwargs))
         self.data_frame = pd.DataFrame(ret, dtype=object)
-        del self.data_frame['_id']
+        try:
+            del self.data_frame['_id']
+        except KeyError:
+            pass
 
     @staticmethod
     def __exists__(collection, *args, **kwargs):
@@ -36,7 +39,10 @@ class LineConfigMongodbReader(MongodbReader):
 
     def load_frame(self, line_no):
         self.__load_frame__(self.__collection__, {'line_no': line_no})
-        self.data_frame = self.data_frame.sort_values('seq', ascending=True)
+        try:
+            self.data_frame = self.data_frame.sort_values('seq', ascending=True)
+        except KeyError:
+            pass
 
     def get_header_list(self):
         header_header = 'trip,type,direction,'
@@ -121,6 +127,7 @@ class PlanScheduleMongodbReader(MongodbReader):
     def _get_data(self):
         # pool = ThreadPool(10)
         pool = Pool(4)
+
         line_trains_records = list()
 
         trip_groups = self.data_frame.groupby('trip')
@@ -129,8 +136,7 @@ class PlanScheduleMongodbReader(MongodbReader):
         #     record_list = self._gen_row(trip, train_frame)
         #     line_trains_records.append(record_list)
 
-        # results = pool.map(self._gen_row, trip_groups)
-        results = pool.map_async(self._gen_row, trip_groups).get(120)
+        results = pool.map_async(self._gen_row, trip_groups).get(1020)
         pool.close()
         pool.join()
         line_trains_records.extend(results)

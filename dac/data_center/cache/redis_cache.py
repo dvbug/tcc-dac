@@ -27,9 +27,8 @@ class RedisCache(object, metaclass=ABCMeta):
 
     @staticmethod
     def get_redis_data(key):
-        # TODO if not exists, need loading from mongodb than set into redis.
-
-        return redis_client.get(key).decode()
+        # TODO if not exists, need try loading from mongodb than set into redis. -- NOT DO.
+        return redis_client.get(key)  # .decode()
 
     @staticmethod
     def key_exist(key):
@@ -54,5 +53,4 @@ class ScheduleCache(RedisCache):
 
     def get_pandas_data(self, line_no, date, plan_or_real='plan'):
         raw_data = self.get_raw_data(line_no, date, plan_or_real)
-
         return pd.DataFrame.from_dict(raw_data, orient='index')
