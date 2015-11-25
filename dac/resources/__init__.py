@@ -17,10 +17,8 @@ def abort_error_resp(http_status_code, **kwargs):
           data=data)
 
 
-def make_json_response(http_status_code=200, *args, **kwargs):
-    data = list()
-    data.extend(args)
-    data.extend(kwargs)
+def make_json_response(http_status_code, **kwargs):
+    data = kwargs
     return {
         'data': data,
         'version': API_VERSION,

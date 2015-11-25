@@ -1,5 +1,6 @@
 # coding: utf-8
-from flask import Flask, url_for
+from flask import Flask
+from flask_json import FlaskJSON
 from flask_restful import Api
 from .common.util import JSONEncoder
 from .resources.schedule import Schedule, ScheduleList
@@ -14,6 +15,8 @@ def create_app(config_override=None):
     app.json_encoder = JSONEncoder
     app.config.from_object(config)
     app.config.from_object(config_override)
+
+    flask_json = FlaskJSON(app)
 
     api = Api(app, prefix=_api_version_prefix, catch_all_404s=True)
 

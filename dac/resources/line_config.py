@@ -20,7 +20,7 @@ class LineConfig(Resource, LineConfigMixin):
         _header_mongodb_reader.load_frame(line_no)
         self.if_not_exists(line_no)
         data = _header_mongodb_reader.get_raw_data()
-        return make_json_response(200, data), 200
+        return make_json_response(200, lineconfig=data), 200
 
     def post(self, line_no):
         args = post_parser.parse_args()
