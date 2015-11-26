@@ -56,7 +56,7 @@ class ScheduleCache(RedisCache):
     def get_raw_data(self, line_no, date, plan_or_real='plan'):
         key = self.get_key(line_no, date, plan_or_real)
         json_data = RedisCache.get_redis_data(key)
-        data = json.loads(json_data,encoding='GBK')
+        data = json.loads(json_data, encoding='GBK')
         return data
 
     def get_pandas_data(self, line_no, date, plan_or_real='plan'):

@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod
 from multiprocessing import Pool
 from .import db
 from dac.data_center.cache.redis_cache import RedisCache
+from dac.common.exceptions import NoDataError
 
 
 class MongodbReader(object, metaclass=ABCMeta):
@@ -28,6 +29,9 @@ class MongodbReader(object, metaclass=ABCMeta):
     def __load_frame__(self, collection, *args, **kwargs):
         _collection = db[collection]
         ret = list(_collection.find(*args, **kwargs))
+        if ret is None or len(ret) == 0:
+            raise NoDataError(collection, *args, **kwargs)
+
         self.data_frame = pd.DataFrame(ret, dtype=object)
         try:
             del self.data_frame['_id']

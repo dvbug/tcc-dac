@@ -10,6 +10,7 @@
 from flask_restful import Resource, reqparse
 from flask_json import as_json_p
 from dac.data_center.database.reader import LineConfigMongodbReader
+# from dac.common.exceptions import NoDataError
 from . import LineConfigMixin, make_json_response
 
 _header_mongodb_reader = LineConfigMongodbReader()

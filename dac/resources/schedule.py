@@ -11,6 +11,7 @@ from flask_restful import Resource
 from flask_json import as_json_p
 from . import ScheduleMixin, make_json_response
 from dac.data_center.cache.redis_cache import ScheduleCache
+from dac.common.exceptions import NoDataError
 
 data_cache = ScheduleCache()
 
@@ -35,8 +36,12 @@ class ScheduleList(Resource, ScheduleMixin):
     """
     @as_json_p
     def get(self, line_no, date, plan_or_real='plan'):
-        self.if_not_exists(line_no, date, plan_or_real)
-        data = data_cache.get_raw_data(line_no, date, plan_or_real)
+        try:
+            self.if_not_exists(line_no, date, plan_or_real)
+            data = data_cache.get_raw_data(line_no, date, plan_or_real)
+        except NoDataError as e:
+            print(e)
+            data = {}
 
         return make_json_response(200, schedules=data), 200
 
@@ -88,17 +93,21 @@ class Schedule(Resource, ScheduleMixin):
         of course, it also support JSONP request.
         url: /api/v1.0/schedules/20140702/01/plan/1023?callback=?
         """
-        self.if_not_exists(line_no, date, plan_or_real)
-        # data_frame = data_cache.get_pandas_data(line_no, date, plan_or_real)
-        # """:type data_frame: pd.DataFrame"""
-        #
-        # found_row = data_frame[data_frame['trip'] == trip]
-        # if len(found_row) == 1:
-        #     data = found_row.to_dict(orient='index')
-        #     # found_row = found_row.iloc(0)[0]
-        #     # data = found_row.to_dict()
-        #     return data, 200
-        raw_data = data_cache.get_raw_data(line_no, date, plan_or_real)
+        try:
+            self.if_not_exists(line_no, date, plan_or_real)
+            # data_frame = data_cache.get_pandas_data(line_no, date, plan_or_real)
+            # """:type data_frame: pd.DataFrame"""
+            #
+            # found_row = data_frame[data_frame['trip'] == trip]
+            # if len(found_row) == 1:
+            #     data = found_row.to_dict(orient='index')
+            #     # found_row = found_row.iloc(0)[0]
+            #     # data = found_row.to_dict()
+            #     return data, 200
+            raw_data = data_cache.get_raw_data(line_no, date, plan_or_real)
+        except NoDataError as e:
+            print(e)
+            raw_data = {}
 
         results_schedules = dict()
 
