@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~
 
     tcc-dac dac config module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 mongo_host = '192.168.1.91'
 mongo_port = 20000

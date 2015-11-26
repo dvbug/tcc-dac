@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~~~~~~~~~~
 
     tcc-dac website test data_center module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 
 if __name__ == '__main__':

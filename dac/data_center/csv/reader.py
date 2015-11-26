@@ -5,6 +5,8 @@
 
     tcc-dac data_center csv reader module.
     Loads from csv file, than fill into mongodb.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 import pandas as pd
 from abc import ABCMeta, abstractmethod

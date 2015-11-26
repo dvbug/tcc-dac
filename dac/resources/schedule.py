@@ -1,8 +1,16 @@
 # coding: utf-8
+"""
+    tcc-dac.resources.schedule
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac resources schedule module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
+"""
 from flask_restful import Resource
 from flask_json import as_json_p
 from . import ScheduleMixin, make_json_response
-from ..data_center.cache.redis_cache import ScheduleCache
+from dac.data_center.cache.redis_cache import ScheduleCache
 
 data_cache = ScheduleCache()
 

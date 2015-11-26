@@ -1,4 +1,12 @@
 # coding: utf-8
+"""
+    tcc-dac.resources
+    ~~~~~~~~~~~~~~~~~
+
+    tcc-dac resources packages.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
+"""
 from flask_restful import abort, request
 from dac.data_center.cache.redis_cache import ScheduleCache
 from dac.data_center.database.reader import LineConfigMongodbReader, PlanScheduleMongodbReader

@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     tcc-dac data_center cache package.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 from redis import StrictRedis
 from ...config import redis_host, redis_port, redis_password

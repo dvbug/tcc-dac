@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~
 
     tcc-dac website test run module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 from dac.app import create_app
 

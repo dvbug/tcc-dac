@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     tcc-dac data_center database package.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 # from functools import wraps
 from pymongo import MongoClient

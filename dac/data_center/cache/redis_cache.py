@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     tcc-dac data_center cache for redis module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 import json
 import pandas as pd

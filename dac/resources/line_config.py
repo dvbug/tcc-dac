@@ -1,8 +1,15 @@
 # coding: utf-8
+"""
+    tcc-dac.resources.line_config
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac resources line_config module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
+"""
 from flask_restful import Resource, reqparse
 from flask_json import as_json_p
 from dac.data_center.database.reader import LineConfigMongodbReader
-from dac.data_center.csv.reader import LineConfigCSVReader
 from . import LineConfigMixin, make_json_response
 
 _header_mongodb_reader = LineConfigMongodbReader()

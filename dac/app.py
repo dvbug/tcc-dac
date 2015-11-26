@@ -4,6 +4,8 @@
     ~~~~~~~~~~~~~~~
 
     tcc-dac dac app factory module.
+    :copyright: (c) 2015 by Vito.
+    :license: GNU, see LICENSE for more details.
 """
 from flask import Flask
 from flask_json import FlaskJSON
