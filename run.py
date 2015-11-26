@@ -1,4 +1,10 @@
 # coding: utf-8
+"""
+    tcc-dac.run
+    ~~~~~~~~~~~~~~~
+
+    tcc-dac website test run module.
+"""
 from dac.app import create_app
 
 

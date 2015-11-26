@@ -1,9 +1,14 @@
 # coding:utf-8
+"""
+    tcc-dac.data_center.database
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac data_center database package.
+"""
 # from functools import wraps
 from pymongo import MongoClient
 # from pymongo.database import Database
-
-from ...config import mongo_host, mongo_port, mongo_db
+from dac.config import mongo_host, mongo_port, mongo_db
 
 
 def _connect_mongo(host, port, username=None, password=None, db=None):

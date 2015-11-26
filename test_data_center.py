@@ -1,5 +1,10 @@
 # coding: utf-8
+"""
+    tcc-dac.test_data_center
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
+    tcc-dac website test data_center module.
+"""
 
 if __name__ == '__main__':
     # from dac.data_center.csv.reader import LineConfigCSVReader

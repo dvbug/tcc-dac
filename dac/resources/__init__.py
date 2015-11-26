@@ -32,7 +32,7 @@ class ScheduleMixin(object):
     def if_not_exists(line_no, date, plan_or_real):
         key = ScheduleCache.get_key(line_no, date, plan_or_real)
         if not ScheduleCache.key_exist(key):
-            # TODO if not exists, need try loading from mongodb than set into redis.
+            # TODO if not exists, need try loading from mongodb than set into redis. -DONE
             plan_schedule_reader = PlanScheduleMongodbReader()
             plan_schedule_reader.load_frame(line_no, date)
             # plan_schedule_reader.to_redis()
@@ -46,10 +46,10 @@ class ScheduleMixin(object):
             try:
                 pid = os.fork()
                 if pid == 0:
-                    print('sub process beginning')
+                    print('run sub process to fill data to redis.')
                     plan_schedule_reader.to_redis()
                 else:
-                    print('main process beginning')
+                    print('run main process to return json data.')
                     return plan_schedule_reader.data_frame_result.to_json(orient='index')
             except OSError:
                 abort_error_resp(410, lineNo=line_no, date=date, datatype=plan_or_real)

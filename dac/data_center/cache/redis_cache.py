@@ -1,4 +1,10 @@
 # coding: utf-8
+"""
+    tcc-dac.data_center.cache.redis_cache
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac data_center cache for redis module.
+"""
 import json
 import pandas as pd
 from abc import ABCMeta, abstractmethod

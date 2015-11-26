@@ -1,8 +1,14 @@
 # coding:utf-8
-import json
+"""
+    tcc-dac.data_center.csv.reader
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac data_center csv reader module.
+    Loads from csv file, than fill into mongodb.
+"""
 import pandas as pd
 from abc import ABCMeta, abstractmethod
-from ..database import db
+from dac.data_center.database import db
 
 
 class CSVReader(object, metaclass=ABCMeta):
@@ -114,76 +120,4 @@ class PlanScheduleCSVReader(CSVReader):
 
     __str__ = to_string
     __repr__ = to_string
-
-
-# class CSVTrainReader(CSVReader):
-#     COLUMNS = ['line_no', 'date', 'A', 'B', 'trip', 'C', 'D', 'stn_id', 'arr_time', 'dep_time', 'direction']
-#     __collection__ = 'stn_conf'
-#
-#     def __init__(self):
-#         """
-#         :type line_no:str
-#         :type file: str
-#         :type header_file: str
-#         """
-#         super(CSVTrainReader, self).__init__()
-#         self.data_info = {}
-#         # self.file = file
-#         # self.header_file = header_file
-#         self.orderd_stn = []
-#         self._gen_data_info()
-#         self._read_header()
-#         self._read_data()
-#
-#     def _gen_data_info(self):
-#         # TEMP_PLAN_201407020000_20140702074500.csv
-#         file_name = self.file[:self.file.rfind('.')]
-#         tmp = file_name.split('_')
-#         if len(tmp) != 4:
-#             raise ValueError('file name must like : TEMP_PLAN_201407020000_20140702074500.csv')
-#
-#         self.data_info['type'] = tmp[1]
-#         self.data_info['start_time'] = tmp[2]
-#         self.data_info['end_time'] = tmp[3]
-#
-#     def _read_data(self):
-#         data_frame = pd.read_csv(self.file, encode='utf-8', dtype=str, header=None)
-#         data_frame.columns = CSVTrainReader.COLUMNS
-#         # get line_no 's data
-#         data_frame = data_frame.groupby(CSVTrainReader.COLUMNS[0]).get_group(self.data_info['line_no'])
-#         self._gen_data(data_frame)
-#
-#     def _gen_data(self, data_frame):
-#         data = pd.DataFrame(columns=self.header)
-#         groups = data_frame.groupby(CSVTrainReader.COLUMNS[4])
-#         for trip, train_group in groups:
-#             record_list = [trip, 'B', train_group[:1]['direction']]
-#             time_list = self._gen_train_times(train_group, self.orderd_stn)
-#             record_list.extend(time_list)
-#             print(record_list)
-#
-#     @staticmethod
-#     def _gen_train_times(train_group, orderd_stn):
-#         """:type train_group: pd.DataFrame
-#             :type orderd_stn: list
-#         """
-#         time_list = []
-#         for stn in orderd_stn:
-#             if stn in train_group['stn_id']:
-#                 for index, row in train_group.iterrows():
-#                     if row['stn_id'] == stn:
-#                         if row['direction'] == '1':
-#                             time_list.extend([row['dep_time'], row['arr_time']])
-#                         else:
-#                             time_list.extend([row['arr_time'], row['dep_time']])
-#             else:
-#                 time_list.append('-')
-#                 time_list.append('-')
-#
-#         return time_list
-#
-#     def _read_header(self):
-#         self.header = gen_header(self.header_file)
-#         self.orderd_stn = gen_ordered_stns(self.header_file)
-#
 

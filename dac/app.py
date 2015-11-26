@@ -1,11 +1,17 @@
 # coding: utf-8
+"""
+    tcc-dac.dac.app
+    ~~~~~~~~~~~~~~~
+
+    tcc-dac dac app factory module.
+"""
 from flask import Flask
 from flask_json import FlaskJSON
 from flask_restful import Api
+from . import config
 from .common.util import JSONEncoder
 from .resources.schedule import Schedule, ScheduleList
 from .resources.line_config import LineConfig
-from . import config
 from .config import API_VERSION
 
 
@@ -16,11 +22,11 @@ def create_app(config_override=None):
     app.config.from_object(config)
     app.config.from_object(config_override)
 
-    flask_json = FlaskJSON(app)
+    FlaskJSON(app)
 
     api = Api(app, prefix=_api_version_prefix, catch_all_404s=True)
 
-    # TODO register add_resource here
+    # TODO register more resources here ...
     api.add_resource(ScheduleList,
                      '/schedules/<string:date>/<string:line_no>/<string:plan_or_real>',
                      endpoint='schedule.list')
@@ -36,6 +42,7 @@ def create_app(config_override=None):
 
 
 def init_app_index(app: Flask, api: Api):
+    """Init flask app's '/' route. Returns all registered resources."""
     from flask import jsonify
 
     @app.route('/')
@@ -49,4 +56,4 @@ def init_app_index(app: Flask, api: Api):
         return jsonify(resp_data), 200
 
 
-# TODO need to split all the Resouce data single
+# TODO need to split all the Resouce data single - NOT DO

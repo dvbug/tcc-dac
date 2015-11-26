@@ -1,4 +1,10 @@
 # coding: utf-8
+"""
+    tcc-dac.common.util
+    ~~~~~~~~~~~~~~~~~~~
+
+    tcc-dac common util module.
+"""
 from flask.json import JSONEncoder as BaseJSONEncoder
 
 
