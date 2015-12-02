@@ -27,6 +27,10 @@ def _connect_mongo(host, port, username=None, password=None, db=None):
 db = _connect_mongo(mongo_host, mongo_port, db=mongo_db)
 
 
+def create_new_conn_db():
+    return _connect_mongo(mongo_host, mongo_port, db=mongo_db)
+
+
 # def close_db(*dbs):
 #     if dbs is None or len(dbs) == 0:
 #         dbs = ['db']

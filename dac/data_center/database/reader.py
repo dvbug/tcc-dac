@@ -133,7 +133,7 @@ class PlanScheduleMongodbReader(MongodbReader):
         RedisCache.set_redis_data('LINE{}_{}_{}'.format(self._line_no, self._type, self._date), data)
 
     def to_csv(self):
-        file_path = 'dac/static/data/LINE{}_{}_{}.tcsv'.format(self._line_no, self._type, self._date)
+        file_path = 'dac/static/data/LINE{}_{}_{}.csv'.format(self._line_no, self._type, self._date)
         self.data_frame_result.to_csv(file_path, index=False)
 
     def _load_header(self, line_no):

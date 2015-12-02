@@ -34,6 +34,13 @@ def make_json_response(http_status_code, **kwargs):
     }
 
 
+def make_json_response_2(http_status_code, **kwargs):
+    return dict({
+        'version': API_VERSION,
+        'status': http_status_code
+    }, **kwargs)
+
+
 class ScheduleMixin(object):
 
     @staticmethod
@@ -56,6 +63,7 @@ class ScheduleMixin(object):
                 if pid == 0:
                     print('run sub process to fill data to redis.')
                     plan_schedule_reader.to_redis()
+                    os._exit(0)
                 else:
                     print('run main process to return json data.')
                     return plan_schedule_reader.data_frame_result.to_json(orient='index')

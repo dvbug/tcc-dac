@@ -27,7 +27,7 @@ class CSVReader(object, metaclass=ABCMeta):
         self.data_frame = pd.read_csv(self.file, encoding='utf-8', dtype=object, **kwargs)
 
     @abstractmethod
-    def to_mongodb(self): pass
+    def to_mongodb(self, *args, **kwargs): pass
 
     @abstractmethod
     def to_string(self): pass
@@ -41,7 +41,23 @@ class CSVReader(object, metaclass=ABCMeta):
         pass
 
 
-class LineConfigCSVReader(CSVReader):
+class MongodbWriter(object, metaclass=ABCMeta):
+    def __init__(self):
+        self.db = None
+        self.collection = None
+
+    def to_mongodb(self, *args, **kwargs):
+        if 'db' in kwargs:
+            self.db = kwargs['db']
+        else:
+            self.db = db
+        if 'collection' in kwargs:
+            self.collection = self.db['collection']
+        else:
+            raise ValueError("'collection' param was not found.")
+
+
+class LineConfigCSVReader(MongodbWriter, CSVReader):
     __collection__ = 'line_conf'
 
     def __init__(self, line_no, file):
@@ -54,8 +70,12 @@ class LineConfigCSVReader(CSVReader):
         if 'line_no' not in self.data_frame.columns:
             self.data_frame['line_no'] = self.line_no
 
-    def to_mongodb(self):
-        collection = db[self.__collection__]
+    def to_mongodb(self, database=db):
+        super(MongodbWriter).to_mongodb(db=database, collection=self.__collection__)
+
+        # collection = db[self.__collection__]
+        collection = self.collection
+
         data = self.data_frame.to_dict(orient='records')
 
         # all the data's columns are str type,
