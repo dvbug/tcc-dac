@@ -13,7 +13,7 @@ from flask_restful import Api
 from . import config
 from .common.util import JSONEncoder
 from .resources.schedule import Schedule, ScheduleList
-from .resources.line_config import LineConfig
+from .resources.line_config import LineConfig, LineConfigList
 from .config import API_VERSION
 
 
@@ -35,8 +35,10 @@ def create_app(config_override=None):
     api.add_resource(Schedule,
                      '/schedules/<string:date>/<string:line_no>/<string:plan_or_real>/<string:trip>',
                      endpoint='schedule.trip')
-    api.add_resource(LineConfig, '/configs/lines/<string:line_no>',
+    api.add_resource(LineConfigList, '/configs/lines',
                      endpoint='configs.lines')
+    api.add_resource(LineConfig, '/configs/lines/<string:line_no>',
+                     endpoint='configs.line')
 
     init_app_index(app, api)
 
@@ -49,8 +51,10 @@ def init_app_index(app: Flask, api: Api):
 
     @app.route('/')
     def index():
+        apis = [str(rule) for rule in app.url_map._rules if str(rule).startswith(api.prefix)]
+        apis.sort(key=lambda r: r)
         resp_data = {
-            'apis': [str(rule) for rule in app.url_map._rules if str(rule).startswith(api.prefix)],
+            'apis': apis,
             'status': 200,
             'message': 'Resources list see apis.',
             'version': API_VERSION

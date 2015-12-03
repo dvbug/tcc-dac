@@ -46,18 +46,18 @@ class MongodbWriter(object, metaclass=ABCMeta):
         self.db = None
         self.collection = None
 
-    def to_mongodb(self, *args, **kwargs):
+    def init_db_collection(self, *args, **kwargs):
         if 'db' in kwargs:
             self.db = kwargs['db']
         else:
             self.db = db
         if 'collection' in kwargs:
-            self.collection = self.db['collection']
+            self.collection = self.db[kwargs['collection']]
         else:
             raise ValueError("'collection' param was not found.")
 
 
-class LineConfigCSVReader(MongodbWriter, CSVReader):
+class LineConfigCSVReader(CSVReader, MongodbWriter):
     __collection__ = 'line_conf'
 
     def __init__(self, line_no, file):
@@ -70,12 +70,12 @@ class LineConfigCSVReader(MongodbWriter, CSVReader):
         if 'line_no' not in self.data_frame.columns:
             self.data_frame['line_no'] = self.line_no
 
-    def to_mongodb(self, database=db):
-        super(MongodbWriter).to_mongodb(db=database, collection=self.__collection__)
+    def to_mongodb(self, database=None):
+        self.init_db_collection(db=database or db, collection=self.__collection__)
 
         # collection = db[self.__collection__]
         collection = self.collection
-
+        print(collection)
         data = self.data_frame.to_dict(orient='records')
 
         # all the data's columns are str type,
@@ -89,6 +89,7 @@ class LineConfigCSVReader(MongodbWriter, CSVReader):
             collection.remove(key)
 
         collection.insert(data)
+
 
     def to_string(self):
         header_header = 'trip,type,direction,'

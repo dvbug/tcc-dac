@@ -22,9 +22,9 @@ def _connect_mongo(host, port, username=None, password=None, db=None):
     else:
         conn = MongoClient(host, port)
 
-    return conn[db]
+    return conn, conn[db]
 
-db = _connect_mongo(mongo_host, mongo_port, db=mongo_db)
+db = _connect_mongo(mongo_host, mongo_port, db=mongo_db)[1]
 
 
 def create_new_conn_db():

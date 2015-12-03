@@ -54,10 +54,14 @@ class LineConfigMongodbReader(MongodbReader):
     def __init__(self):
         super(LineConfigMongodbReader, self).__init__()
 
-    def load_frame(self, line_no):
-        self.__load_frame__(self.__collection__, {'line_no': line_no})
+    def load_frame(self, line_no=None):
+        if line_no:
+            self.__load_frame__(self.__collection__, {'line_no': line_no})
+        else:
+            self.__load_frame__(self.__collection__)
+
         try:
-            self.data_frame = self.data_frame.sort_values('seq', ascending=True)
+            self.data_frame = self.data_frame.sort_values(['line_no', 'seq'], ascending=[1, 1])  # ascending=True
         except KeyError:
             pass
 
@@ -85,9 +89,29 @@ class LineConfigMongodbReader(MongodbReader):
     def exists(line_no):
         return MongodbReader.__exists__(LineConfigMongodbReader.__collection__, {'line_no': line_no})
 
+    # def get_raw_data(self):
+    #     data = self.data_frame.to_dict(orient='records')
+    #     return data
+
     def get_raw_data(self):
-        data = self.data_frame.to_dict(orient='records')
-        return data
+        line_groups = self.data_frame.groupby('line_no')
+        # pool = Pool(2)
+        # results = pool.map(self._gen_config_by_line, line_groups)
+        # pool.close()
+        # pool.join()
+        results = map(self._gen_config_by_line, line_groups)
+        raw_data_dict = dict()
+
+        for ln, d in results:
+            raw_data_dict[ln] = d
+
+        return raw_data_dict
+
+    @staticmethod
+    def _gen_config_by_line(*args):
+        line_no, config_frame = args[0]
+        data = config_frame.to_dict(orient='records')
+        return line_no, data
 
 
 class PlanScheduleMongodbReader(MongodbReader):

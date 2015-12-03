@@ -18,7 +18,7 @@ data_cache = ScheduleCache()
 
 class ScheduleList(Resource, ScheduleMixin):
     """Returns trains schedules json response, by date & lineNo & plan_or_real type. like:
-    url: /api/v1.0/schedules/20140702/01/plan/1023 -->
+    url: /api/v1.0/schedules/20140702/01/plan -->
     resp: {
         "data":{
             "schedules":{

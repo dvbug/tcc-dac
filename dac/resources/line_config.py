@@ -26,6 +26,16 @@ post_parser.add_argument(
 )
 
 
+class LineConfigList(Resource, LineConfigMixin):
+
+    @as_json_p
+    def get(self):
+        _header_mongodb_reader.load_frame()
+        data = _header_mongodb_reader.get_raw_data()
+
+        return make_json_response(200, configs=data), 200
+
+
 class LineConfig(Resource, LineConfigMixin):
 
     @as_json_p
@@ -34,7 +44,7 @@ class LineConfig(Resource, LineConfigMixin):
         self.if_not_exists(line_no)
         data = _header_mongodb_reader.get_raw_data()
 
-        return make_json_response(200, configs={line_no: data}), 200
+        return make_json_response(200, configs=data), 200
 
     def post(self, line_no):
         args = post_parser.parse_args()
@@ -50,14 +60,16 @@ class LineConfig(Resource, LineConfigMixin):
         f.close()
 
         try:
-            # pid = os.fork()
-            # if pid == 0:
+            pid = os.fork()
+            if pid == 0:
                 from dac.data_center.database import create_new_conn_db
                 header_reader = LineConfigCSVReader(line_no, full_file_name)
-                header_reader.to_mongodb(database=create_new_conn_db())
+                conn, db = create_new_conn_db()
+                header_reader.to_mongodb(database=db)
+                conn.close()
                 print('line config to mongodb done.')
-                # os._exit(0)
-            # else:
+                os._exit(0)
+            else:
                 return make_json_response_2(200, message="File < {} > upload success.".format(file_name)), 200
         except OSError:
             return make_json_response_2(410, message="File < {} > upload failed.".format(file_name)), 410
