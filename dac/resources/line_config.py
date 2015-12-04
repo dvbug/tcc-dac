@@ -8,7 +8,7 @@
     :license: GNU, see LICENSE for more details.
 """
 import os
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, reqparse, request
 from flask_json import as_json_p
 from dac.data_center.database.reader import LineConfigMongodbReader
 from dac.data_center.csv.reader import LineConfigCSVReader
