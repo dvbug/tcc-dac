@@ -90,7 +90,6 @@ class LineConfigCSVReader(CSVReader, MongodbWriter):
 
         collection.insert(data)
 
-
     def to_string(self):
         header_header = 'trip,type,direction,'
         header_item = 'stop|%s|%s|%s|%s|%s'	 # stop|station name|station id|distance|A or D

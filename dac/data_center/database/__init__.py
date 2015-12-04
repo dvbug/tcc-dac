@@ -10,7 +10,7 @@
 # from functools import wraps
 from pymongo import MongoClient
 # from pymongo.database import Database
-from dac.config import mongo_host, mongo_port, mongo_db
+from dac.config import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
 
 
 def _connect_mongo(host, port, username=None, password=None, db=None):
@@ -24,11 +24,11 @@ def _connect_mongo(host, port, username=None, password=None, db=None):
 
     return conn, conn[db]
 
-db = _connect_mongo(mongo_host, mongo_port, db=mongo_db)[1]
+db = _connect_mongo(MONGODB_HOST, MONGODB_PORT, db=MONGODB_DB)[1]
 
 
 def create_new_conn_db():
-    return _connect_mongo(mongo_host, mongo_port, db=mongo_db)
+    return _connect_mongo(MONGODB_HOST, MONGODB_PORT, db=MONGODB_DB)
 
 
 # def close_db(*dbs):

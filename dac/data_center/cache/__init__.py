@@ -8,9 +8,9 @@
     :license: GNU, see LICENSE for more details.
 """
 from redis import StrictRedis
-from ...config import redis_host, redis_port, redis_password
+from ...config import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
-redis_client = StrictRedis(host=redis_host, port=redis_port,
-                           password=redis_password,
+redis_client = StrictRedis(host=REDIS_HOST, port=REDIS_PORT,
+                           password=REDIS_PASSWORD,
                            charset='GBK',
                            decode_responses=True)

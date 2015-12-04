@@ -46,6 +46,7 @@ class LineConfig(Resource, LineConfigMixin):
 
         return make_json_response(200, configs=data), 200
 
+    @as_json_p
     def post(self, line_no):
         args = post_parser.parse_args()
         file = args.file
