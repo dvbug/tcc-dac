@@ -10,6 +10,12 @@
 SECRET_KEY = "v\x187\xa0\x01\x82DY?\x1d\xcd\x0f\x83\x92\xb0\xc6\xdd\xe5\x93w\xd9vQX"
 PERMANENT_SESSION_LIFETIME = 24 * 60 * 60
 
+# for uploads
+MAXIMUM_UPLOADS_SIZE = 64 * 1024 * 1024
+LINE_CONFIG_UPLOADS_DEFAULT_URL = "dac/static/configs/"
+LINE_DATA_UPLOADS_DEFAULT_URL = "dac/static/schedules/"
+
+
 MONGODB_HOST = '192.168.1.91'
 MONGODB_PORT = 20000
 MONGODB_DB = 'tccdevdb'

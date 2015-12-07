@@ -9,7 +9,7 @@
 """
 from flask_restful import abort, request
 from dac.data_center.cache.redis_cache import ScheduleCache
-from dac.data_center.database.reader import LineConfigMongodbReader, PlanScheduleMongodbReader
+from dac.data_center.database.reader import LineConfigMongodbReader, ScheduleMongodbReader
 from dac.config import API_VERSION
 
 
@@ -48,8 +48,8 @@ class ScheduleMixin(object):
         key = ScheduleCache.get_key(line_no, date, plan_or_real)
         if not ScheduleCache.key_exist(key):
             # TODO if not exists, need try loading from mongodb than set into redis. -DONE
-            plan_schedule_reader = PlanScheduleMongodbReader()
-            plan_schedule_reader.load_frame(line_no, date)
+            plan_schedule_reader = ScheduleMongodbReader()
+            plan_schedule_reader.load_frame(line_no, date, plan_or_real)
             # plan_schedule_reader.to_redis()
             # plan_schedule_reader.data_frame_result.to_json(orient='index')
             # from multiprocessing.dummy import Pool as ThreadPool

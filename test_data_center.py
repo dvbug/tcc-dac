@@ -9,13 +9,14 @@
 """
 
 if __name__ == '__main__':
+    pass
     # from dac.data_center.csv.reader import LineConfigCSVReader
-    # h_csv_reader = LineConfigCSVReader('01', 'dac/static/config/LINE01_STN_CFG.csv')
+    # h_csv_reader = LineConfigCSVReader('01', 'dac/static/configs/LINE01_STN_CFG.csv')
     # h_csv_reader.to_string()
     # h_csv_reader.to_mongodb()
     #
-    # from dac.data_center.csv.reader import PlanScheduleCSVReader
-    # plan_reader = PlanScheduleCSVReader('dac/static/data/TEMP_PLAN_201407020000_20140702074500.csv')
+    # from dac.data_center.csv.reader import ScheduleCSVReader
+    # plan_reader = ScheduleCSVReader('dac/static/schedules/TEMP_PLAN_201407020000_20140702074500.csv', 'PLAN')
     # plan_reader.to_mongodb()
     #
     # from dac.data_center.database.reader import LineConfigMongodbReader
@@ -24,8 +25,8 @@ if __name__ == '__main__':
     # header = h_mongodb_reader.get_header_list()
     # print(header)
 
-    from dac.data_center.database.reader import PlanScheduleMongodbReader
-    train_reader = PlanScheduleMongodbReader()
-    train_reader.load_frame('01', '20140702')
-    train_reader.to_csv()
-    train_reader.to_redis()
+    # from dac.data_center.database.reader import ScheduleMongodbReader
+    # train_reader = ScheduleMongodbReader()
+    # train_reader.load_frame('01', '20140702', 'REAL')
+    # # train_reader.to_csv()
+    # train_reader.to_redis()

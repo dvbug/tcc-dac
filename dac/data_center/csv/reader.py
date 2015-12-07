@@ -47,6 +47,7 @@ class MongodbWriter(object, metaclass=ABCMeta):
         self.collection = None
 
     def init_db_collection(self, *args, **kwargs):
+        """Init collection using default 'db' or custom db conn."""
         if 'db' in kwargs:
             self.db = kwargs['db']
         else:
@@ -109,13 +110,34 @@ class LineConfigCSVReader(CSVReader, MongodbWriter):
     __repr__ = to_string
 
 
-class PlanScheduleCSVReader(CSVReader):
-    __collection__ = 'plan_schedule'
+class ScheduleCSVReader(CSVReader, MongodbWriter):
+    # __collection__ = 'plan_schedule'
+    __collections__ = {
+        'PLAN': 'plan_schedule',
+        'REAL': 'real_schedule',
+    }
     COLUMNS = ['line_no', 'date', 'A', 'B', 'trip', 'terminal_stn', 'idx', 'stn_id', 'arr_time', 'dep_time', 'direction'
                ]
 
-    def __init__(self, file):
-        super(PlanScheduleCSVReader, self).__init__(file)
+    def __init__(self, file: str, plan_or_real=None):
+
+        if plan_or_real is None:
+            try:
+                type_in_file = file.split('_')[1].upper()
+            except Exception:
+                raise ValueError('Unknown the schedule data is REAL or PLAN.')
+            if type_in_file in self.__collections__.keys():
+                self._type = type_in_file
+            else:
+                raise ValueError('Unknown the schedule data is REAL or PLAN.')
+        else:
+            plan_or_real = plan_or_real.upper()
+            if plan_or_real in self.__collections__.keys():
+                self._type = plan_or_real
+            else:
+                raise ValueError('Unknown the schedule data is REAL or PLAN.')
+
+        super(ScheduleCSVReader, self).__init__(file)
         self.load()
 
     def load(self):
@@ -125,8 +147,11 @@ class PlanScheduleCSVReader(CSVReader):
     def to_string(self):
         return '{}:{}'.format(type(self), self.file)
 
-    def to_mongodb(self):
-        collection = db[self.__collection__]
+    def to_mongodb(self, database=None):
+        self.init_db_collection(db=database or db, collection=self.__collections__[self._type])
+
+        # collection = db[self.__collection__]
+        collection = self.collection
         data = self.data_frame.to_dict(orient='records')
 
         # all the data's columns are str type,

@@ -50,7 +50,7 @@ class ScheduleCache(RedisCache):
     @staticmethod
     def get_key(line_no, date, plan_or_real='plan'):
         data_type = plan_or_real.upper() or 'PLAN'
-        key = 'LINE{}_{}_{}'.format(line_no, data_type, date)
+        key = 'LINE{}_{}_{}'.format(line_no, data_type, date)  # KEY: LINE01_PLAN_20140702
         return key
 
     def get_raw_data(self, line_no, date, plan_or_real='plan'):

@@ -18,8 +18,9 @@ from abc import ABCMeta, abstractmethod
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from .import db
-from dac.data_center.cache.redis_cache import RedisCache
+from dac.data_center.cache.redis_cache import RedisCache, ScheduleCache
 from dac.common.exceptions import NoDataError
+from dac.config import LINE_DATA_UPLOADS_DEFAULT_URL
 
 
 class MongodbReader(object, metaclass=ABCMeta):
@@ -27,6 +28,7 @@ class MongodbReader(object, metaclass=ABCMeta):
         self.data_frame = None
 
     def __load_frame__(self, collection, *args, **kwargs):
+        """Load data frame, if no data Raise NoDataError"""
         _collection = db[collection]
         ret = list(_collection.find(*args, **kwargs))
         if ret is None or len(ret) == 0:
@@ -55,6 +57,7 @@ class LineConfigMongodbReader(MongodbReader):
         super(LineConfigMongodbReader, self).__init__()
 
     def load_frame(self, line_no=None):
+        """Load data frame, if no data Raise NoDataError"""
         if line_no:
             self.__load_frame__(self.__collection__, {'line_no': line_no})
         else:
@@ -114,28 +117,36 @@ class LineConfigMongodbReader(MongodbReader):
         return line_no, data
 
 
-class PlanScheduleMongodbReader(MongodbReader):
-    __collection__ = 'plan_schedule'
-    _type = 'PLAN'
+class ScheduleMongodbReader(MongodbReader):
+    # __collection_plan_schedule__ = 'plan_schedule'
+    # __collection_real_schedule__ = 'real_schedule'
+    # __type_plan__ = 'PLAN'
+    # __type_real__ = 'REAL'
+    __collections__ = {
+        'PLAN': 'plan_schedule',
+        'REAL': 'real_schedule',
+    }
 
     def __init__(self):
         self._line_no = None
         self._date = None
+        self._type = None  # real or plan
         self._data_list_result = None
         self._data_frame_result = None
         self._header_reader = LineConfigMongodbReader()
         self.header = []
         self.ordered_stn = []
-        super(PlanScheduleMongodbReader, self).__init__()
+        super(ScheduleMongodbReader, self).__init__()
 
-    def load_frame(self, line_no, date):
-        """
-        :type line_no: str
-        :type date: str
-        """
+    def load_frame(self, line_no, date, plan_or_real):
+        """Load data frame, if no data Raise NoDataError"""
         self._line_no = line_no
         self._date = date
-        self.__load_frame__(self.__collection__, {'$and': [
+        self._type = plan_or_real.upper()
+        if self._type not in self.__collections__.keys():
+            raise ValueError('Invalid param of {}'.format(plan_or_real))
+
+        self.__load_frame__(self.__collections__[self._type], {'$and': [
             {'line_no': line_no},
             {'date': date}
         ]})
@@ -154,10 +165,11 @@ class PlanScheduleMongodbReader(MongodbReader):
         dfr = self.data_frame_result
         """:type dfr: pd.DataFrame"""
         data = dfr.to_json(orient='index')
-        RedisCache.set_redis_data('LINE{}_{}_{}'.format(self._line_no, self._type, self._date), data)
+        RedisCache.set_redis_data(ScheduleCache.get_key(self._line_no, self._date, self._type), data)
 
     def to_csv(self):
-        file_path = 'dac/static/data/LINE{}_{}_{}.csv'.format(self._line_no, self._type, self._date)
+        file_path = os.path.join(LINE_DATA_UPLOADS_DEFAULT_URL,
+                                 'LINE{}_{}_{}.csv'.format(self._line_no, self._type, self._date))
         self.data_frame_result.to_csv(file_path, index=False)
 
     def _load_header(self, line_no):
