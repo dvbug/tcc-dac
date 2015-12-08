@@ -18,7 +18,7 @@ class RedisCache(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_key(self, *args, **kwargs):
+    def get_keys(self, *args, **kwargs):
         pass
 
     @abstractmethod
@@ -48,17 +48,28 @@ class ScheduleCache(RedisCache):
         super(ScheduleCache, self).__init__()
 
     @staticmethod
-    def get_key(line_no, date, plan_or_real='plan'):
+    def get_schedule_type(key: str):
+        return key.split('_')[1]
+
+    @staticmethod
+    def get_keys(line_no, date, plan_or_real):
+        """:param plan_or_real: str, 'PLAN' or 'REAL' or 'PLAN&REAL' """
         data_type = plan_or_real.upper() or 'PLAN'
-        key = 'LINE{}_{}_{}'.format(line_no, data_type, date)  # KEY: LINE01_PLAN_20140702
-        return key
+        # KEY: LINE01_PLAN_20140702
+        keys = ['LINE{}_{}_{}'.format(line_no, dtype, date) for dtype in data_type.split('&')]
+        return keys
 
     def get_raw_data(self, line_no, date, plan_or_real='plan'):
-        key = self.get_key(line_no, date, plan_or_real)
-        json_data = RedisCache.get_redis_data(key)
-        data = json.loads(json_data, encoding='GBK')
-        return data
+        keys = self.get_keys(line_no, date, plan_or_real)
+        ret = list(map(self._get_redis_data, keys))
+        return ret
 
     def get_pandas_data(self, line_no, date, plan_or_real='plan'):
         raw_data = self.get_raw_data(line_no, date, plan_or_real)
         return pd.DataFrame.from_dict(raw_data, orient='index')
+
+    @staticmethod
+    def _get_redis_data(key):
+        json_data = RedisCache.get_redis_data(key) or "{}"
+        data = json.loads(json_data, encoding='GBK')
+        return key, data

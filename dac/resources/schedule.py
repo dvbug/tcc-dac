@@ -18,6 +18,12 @@ data_cache = ScheduleCache()
 
 post_parser = reqparse.RequestParser()
 post_parser.add_argument(
+    'fname', dest='fname',
+    # location='form',
+    type=str,
+    required=True, help='The plan or real schedule\'s file name',
+)
+post_parser.add_argument(
     'file', dest='file',
     # location='form',
     type=str,
@@ -25,41 +31,23 @@ post_parser.add_argument(
 )
 
 
-class ScheduleList(Resource, ScheduleMixin):
-
+class DateScheduleList(Resource, ScheduleMixin):
     @as_json_p
-    def get(self, line_no, date, plan_or_real='plan'):
-        """Returns trains schedules json response, by date & lineNo & plan_or_real type. like:
-        GET: /api/v1.0/schedules/20140702/01/plan -->
+    def post(self, date, plan_or_real):
+        """Post schedule data, by date & plan_or_real type. like:
+        POST: /api/v1.0/schedules/20140702/plan --data "file=file content&fname=file origin name"-->
         resp: {
-            "data":{
-                "schedules":{
-                    "trip1":{},
-                    "trip2":{},
-                    ...,
-                    "tripN":{}
-                }
-            },
-            "status": 200,
+            "message": "success or failed",
+            "status": 200, or 410
             "version": "v1.0"
         };
         of course, it also support JSONP request.
         url: /api/v1.0/schedules/20140702/01/plan?callback=?
         """
-        try:
-            self.if_not_exists(line_no, date, plan_or_real)
-            data = data_cache.get_raw_data(line_no, date, plan_or_real)
-        except NoDataError as e:
-            print(e)
-            data = {}
-
-        return make_json_response(200, schedules=data), 200
-
-    @as_json_p
-    def post(self, date, plan_or_real):
         args = post_parser.parse_args()
         file = args.file
-        file_name = 'TEMP_{}_{}.csv'.format(plan_or_real, date)  # TEMP_PLAN_20150101.csv
+        file_orgin_name = args.fname
+        file_name = 'TEMP_{}_{}-{}.csv'.format(plan_or_real, date, file_orgin_name)  # TEMP_PLAN_20150101.csv
 
         upload_dir = current_app.config['LINE_DATA_UPLOADS_DEFAULT_URL'] or 'dac/static/schedules/'
         full_file_name = os.path.join(upload_dir, file_name)
@@ -84,6 +72,62 @@ class ScheduleList(Resource, ScheduleMixin):
             return make_json_response_2(410, message="File < {} > upload failed.".format(file_name)), 410
 
 
+class ScheduleList(Resource, ScheduleMixin):
+
+    @as_json_p
+    def get(self, line_no, date, plan_or_real):
+        """Returns trains schedules json response, by date & lineNo & plan_or_real type. like:
+        GET: /api/v1.0/schedules/20140702/01/plan -->
+        resp: {
+            "data":{
+                "plan":{
+                    "trip1":{},
+                    "trip2":{},
+                    ...,
+                    "tripN":{}
+                }
+            },
+            "status": 200,
+            "version": "v1.0"
+        }
+        or,
+        GET: /api/v1.0/schedules/20140702/01/plan&real -->
+        resp: {
+            "data":{
+                "plan":{
+                    "trip1":{},
+                    "trip2":{},
+                    ...,
+                    "tripN":{}
+                },
+                "real":{
+                    "trip1":{},
+                    "trip2":{},
+                    ...,
+                    "tripN":{}
+                }
+            },
+            "status": 200,
+            "version": "v1.0"
+        };
+        of course, it also support JSONP request.
+        url: /api/v1.0/schedules/20140702/01/plan?callback=?
+        """
+        try:
+            self.if_not_exists(line_no, date, plan_or_real)
+            raw_data_all = data_cache.get_raw_data(line_no, date, plan_or_real)
+        except NoDataError as e:
+            print(e)
+            raw_data_all = {}
+
+        results_schedules = dict()
+        for key, raw_data in raw_data_all:
+            schedule_type = ScheduleCache.get_schedule_type(key).lower()
+            results_schedules[schedule_type] = raw_data
+
+        return make_json_response(200, **results_schedules), 200
+
+
 class Schedule(Resource, ScheduleMixin):
 
     @as_json_p
@@ -92,7 +136,7 @@ class Schedule(Resource, ScheduleMixin):
         url: /api/v1.0/schedules/20140702/01/plan/1023 -->
         resp: {
             "data":{
-                "schedules":{
+                "plan":{
                     "1023":{
                         "direction": "1",
                         "stop|<stationName>|<trip>|*|<orderIndex>": "20140702063225",
@@ -108,23 +152,23 @@ class Schedule(Resource, ScheduleMixin):
         url: /api/v1.0/schedules/20140702/01/plan/1023&1024 -->
         resp: {
             "data":{
-                "schedules":{
-                    "1023":{
-                        "direction": "1",
-                        "stop|<stationName>|<trip>|*|<orderIndex>": "20140702063225",
-                        ...,
-                        ...,
-                        "trip": "1023",
-                        "type": "B"
-                    },
-                    "1024":{
-                        "direction": "1",
-                        "stop|<stationName>|<trip>|*|<orderIndex>": "20140702063455",
-                        ...,
-                        ...,
-                        "trip": "1024",
-                        "type": "B"
-                    }
+                "plan":{
+                    "1023":{...},
+                    "1024":{...}
+                }
+            }
+        }
+        or,
+        url: /api/v1.0/schedules/20140702/01/plan&real/1023&1024 -->
+        resp: {
+            "data":{
+                "plan":{
+                    "1023":{...},
+                    "1024":{...}
+                },
+                "real":{
+                    "1023":{...},
+                    "1024":{...}
                 }
             }
         };
@@ -142,22 +186,19 @@ class Schedule(Resource, ScheduleMixin):
             #     # found_row = found_row.iloc(0)[0]
             #     # data = found_row.to_dict()
             #     return data, 200
-            raw_data = data_cache.get_raw_data(line_no, date, plan_or_real)
+            raw_data_all = data_cache.get_raw_data(line_no, date, plan_or_real)
         except NoDataError as e:
             print(e)
-            raw_data = {}
+            raw_data_all = []
 
         results_schedules = dict()
+        for key, raw_data in raw_data_all:
+            schedule_type = ScheduleCache.get_schedule_type(key).lower()
+            results_schedules[schedule_type] = dict()
+            for t in trip.split('&'):
+                results_schedules[schedule_type][t] = self._find_trip_row(raw_data, t)
 
-        if '&' in trip:
-            trips = trip.split('&')
-            for trip in trips:
-                if len(trip) > 0:
-                    results_schedules[trip] = self._find_trip_row(raw_data, trip)
-        else:
-            results_schedules[trip] = self._find_trip_row(raw_data, trip)
-
-        return make_json_response(200, schedules=results_schedules), 200
+        return make_json_response(200, **results_schedules), 200
 
     @staticmethod
     def _find_trip_row(collection, trip):

@@ -45,30 +45,25 @@ class ScheduleMixin(object):
 
     @staticmethod
     def if_not_exists(line_no, date, plan_or_real):
-        key = ScheduleCache.get_key(line_no, date, plan_or_real)
-        if not ScheduleCache.key_exist(key):
-            # TODO if not exists, need try loading from mongodb than set into redis. -DONE
-            plan_schedule_reader = ScheduleMongodbReader()
-            plan_schedule_reader.load_frame(line_no, date, plan_or_real)
-            # plan_schedule_reader.to_redis()
-            # plan_schedule_reader.data_frame_result.to_json(orient='index')
-            # from multiprocessing.dummy import Pool as ThreadPool
-            # pool = ThreadPool()
-            # pool.apply_async(plan_schedule_reader.to_redis)
-            # pool.close()
-            # pool.join()
-            import os
-            try:
-                pid = os.fork()
-                if pid == 0:
-                    print('run sub process to fill data to redis.')
-                    plan_schedule_reader.to_redis()
-                    os._exit(0)
-                else:
-                    print('run main process to return json data.')
-                    return plan_schedule_reader.data_frame_result.to_json(orient='index')
-            except OSError:
-                abort_error_resp(410, lineNo=line_no, date=date, datatype=plan_or_real)
+        keys = ScheduleCache.get_keys(line_no, date, plan_or_real)
+        for key in keys:
+            if not ScheduleCache.key_exist(key):
+                # TODO if not exists, need try loading from mongodb than set into redis. -DONE
+                schedule_reader = ScheduleMongodbReader()
+                schedule_type = ScheduleCache.get_schedule_type(key)
+                schedule_reader.load_frame(line_no, date, schedule_type)
+                import os
+                try:
+                    pid = os.fork()
+                    if pid == 0:
+                        print('if_not_exists -> run sub process to fill data to redis.')
+                        schedule_reader.to_redis()
+                        os._exit(0)
+                    # else:
+                    #     print('run main process to return json data.')
+                    #     return schedule_reader.data_frame_result.to_json(orient='index')
+                except OSError:
+                    abort_error_resp(410, lineNo=line_no, date=date, datatype=schedule_type)
 
 
 class LineConfigMixin(object):

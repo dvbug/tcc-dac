@@ -165,7 +165,7 @@ class ScheduleMongodbReader(MongodbReader):
         dfr = self.data_frame_result
         """:type dfr: pd.DataFrame"""
         data = dfr.to_json(orient='index')
-        RedisCache.set_redis_data(ScheduleCache.get_key(self._line_no, self._date, self._type), data)
+        RedisCache.set_redis_data(ScheduleCache.get_keys(self._line_no, self._date, self._type), data)
 
     def to_csv(self):
         file_path = os.path.join(LINE_DATA_UPLOADS_DEFAULT_URL,
@@ -206,7 +206,10 @@ class ScheduleMongodbReader(MongodbReader):
         trip, train_frame = args[0]
         print('{} - PPID: {}-PID: {} - TRIP: {}'.format(time.time(), os.getppid(), os.getpid(), trip))
         # train_frame.iloc(0)[0]['direction']:  get first row's direction column value
-        record_list = [trip, 'B', train_frame.iloc(0)[0]['direction']]
+
+        # changed the 'B' to self._type . NBL
+        record_list = [trip, self._type, train_frame.iloc(0)[0]['direction']]
+
         time_list = self._gen_train_times(train_frame, self.ordered_stn)
         record_list.extend(time_list)
         return record_list
