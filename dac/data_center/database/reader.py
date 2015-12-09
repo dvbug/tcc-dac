@@ -139,7 +139,9 @@ class ScheduleMongodbReader(MongodbReader):
         super(ScheduleMongodbReader, self).__init__()
 
     def load_frame(self, line_no, date, plan_or_real):
-        """Load data frame, if no data Raise NoDataError"""
+        """Load data frame, if no data Raise NoDataError
+            :type plan_or_real: must single 'PLAN' or 'REAL', not 'PLAN&REAL'
+        """
         self._line_no = line_no
         self._date = date
         self._type = plan_or_real.upper()
@@ -165,7 +167,7 @@ class ScheduleMongodbReader(MongodbReader):
         dfr = self.data_frame_result
         """:type dfr: pd.DataFrame"""
         data = dfr.to_json(orient='index')
-        RedisCache.set_redis_data(ScheduleCache.get_keys(self._line_no, self._date, self._type), data)
+        RedisCache.set_redis_data(ScheduleCache.get_keys(self._line_no, self._date, self._type)[0], data)
 
     def to_csv(self):
         file_path = os.path.join(LINE_DATA_UPLOADS_DEFAULT_URL,

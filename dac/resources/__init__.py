@@ -8,6 +8,7 @@
     :license: GNU, see LICENSE for more details.
 """
 from flask_restful import abort, request
+from dac.common.exceptions import NoDataError
 from dac.data_center.cache.redis_cache import ScheduleCache
 from dac.data_center.database.reader import LineConfigMongodbReader, ScheduleMongodbReader
 from dac.config import API_VERSION
@@ -51,7 +52,12 @@ class ScheduleMixin(object):
                 # TODO if not exists, need try loading from mongodb than set into redis. -DONE
                 schedule_reader = ScheduleMongodbReader()
                 schedule_type = ScheduleCache.get_schedule_type(key)
-                schedule_reader.load_frame(line_no, date, schedule_type)
+                try:
+                    schedule_reader.load_frame(line_no, date, schedule_type)
+                except NoDataError:
+                    print('no data in db. KEY:{}'.format(key))
+                    return
+
                 import os
                 try:
                     pid = os.fork()
