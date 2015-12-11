@@ -8,7 +8,7 @@
     :license: GNU, see LICENSE for more details.
 """
 from dac.app import create_app
-from . import config_override
+from dac import config_override
 
 application = create_app(config_override=config_override)
 
