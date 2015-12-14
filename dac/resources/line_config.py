@@ -62,9 +62,15 @@ class LineConfig(Resource, LineConfigMixin):
         full_file_name = os.path.join(upload_dir, file_name)
         # with open(full_file_name, mode='w') as f:
         #     f.write(file)
-        f = open(full_file_name, mode='w')
-        f.write(file)
-        f.close()
+        try:
+            f = open(full_file_name, mode='w')
+            f.write(file)
+        except Exception as e:
+            print("DAC LineConfig post ERROR", e)
+            return make_json_response_2(410, message="File < {} > upload failed. {}".format(file_name, e)), 410
+        finally:
+            f.close()
+
 
         try:
             pid = os.fork()
@@ -80,5 +86,6 @@ class LineConfig(Resource, LineConfigMixin):
             else:
                 return make_json_response_2(200, message="File < {} > upload success. Refresh to reload."
                                             .format(file_name)), 200
-        except OSError:
+        except OSError as e:
+            print("DAC LineConfig post OSError", e)
             return make_json_response_2(410, message="File < {} > upload failed.".format(file_name)), 410
