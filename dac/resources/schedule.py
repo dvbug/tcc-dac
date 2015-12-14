@@ -51,9 +51,14 @@ class DateScheduleList(Resource, ScheduleMixin):
 
         upload_dir = current_app.config['LINE_DATA_UPLOADS_DEFAULT_URL'] or 'dac/static/schedules/'
         full_file_name = os.path.join(upload_dir, file_name)
-        f = open(full_file_name, mode='w')
-        f.write(file)
-        f.close()
+        try:
+            f = open(full_file_name, mode='w')
+            f.write(file)
+        except Exception as e:
+            print("DAC DateScheduleList post ERROR", e)
+            return make_json_response_2(410, message="File < {} > upload failed. {}".format(file_name, e)), 410
+        finally:
+            f.close()
         try:
             pid = os.fork()
             if pid == 0:
@@ -68,7 +73,8 @@ class DateScheduleList(Resource, ScheduleMixin):
             else:
                 return make_json_response_2(200, message="File < {} > upload success. Refresh to reload."
                                             .format(file_name)), 200
-        except OSError:
+        except OSError as e:
+            print("DAC DateScheduleList post OSError", e)
             return make_json_response_2(410, message="File < {} > upload failed.".format(file_name)), 410
 
 
