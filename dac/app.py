@@ -11,14 +11,15 @@ from flask import Flask
 from flask_json import FlaskJSON
 from flask_restful import Api
 from . import config
-from .common.util import JSONEncoder
-from .resources.schedule import Schedule, ScheduleList, DateScheduleList
-from .resources.line_config import LineConfig, LineConfigList
-from .config import API_VERSION
+from dac.common.util import JSONEncoder
+from dac.resources.schedule import Schedule, ScheduleList, DateScheduleList
+from dac.resources.line_config import LineConfig, LineConfigList
+from dac.data_center.database import db
+from dac.data_center.cache import redis_client
 
 
 def create_app(config_override=None):
-    _api_version_prefix = '/api/{}'.format(API_VERSION).rstrip('/')
+
     app = Flask(__name__)
     app.json_encoder = JSONEncoder
     app.config.from_object(config)
@@ -26,7 +27,12 @@ def create_app(config_override=None):
 
     FlaskJSON(app)
 
+    _api_version_prefix = '/api/{}'.format(app.config['API_VERSION'] or 'v1.0').rstrip('/')
     api = Api(app, prefix=_api_version_prefix, catch_all_404s=True)
+
+    db.init_app(app)
+
+    redis_client.init_app(app)
 
     # TODO register more resources here ...
 
@@ -45,7 +51,6 @@ def create_app(config_override=None):
                      endpoint='configs.line')
 
     init_app_index(app, api)
-    # init_app_uploads(app)
 
     return app
 
@@ -63,7 +68,7 @@ def init_app_index(app: Flask, api: Api):
             'apis': apis,
             'status': 200,
             'message': 'Resources list see apis.',
-            'version': API_VERSION
+            'version': app.config['API_VERSION'] or 'v1.0'
         }
         return jsonify(resp_data), 200
 

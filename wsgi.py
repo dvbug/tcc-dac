@@ -12,3 +12,5 @@ from dac import config_override
 
 application = create_app(config_override=config_override)
 
+if __name__ == '__main__':
+    application.run('0.0.0.0', 8080, debug=True)

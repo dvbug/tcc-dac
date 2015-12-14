@@ -69,11 +69,12 @@ class LineConfig(Resource, LineConfigMixin):
         try:
             pid = os.fork()
             if pid == 0:
-                from dac.data_center.database import create_new_conn_db
+                from dac.data_center.database import Mongodb
                 header_reader = LineConfigCSVReader(line_no, full_file_name)
-                conn, db = create_new_conn_db()
-                header_reader.to_mongodb(database=db)
-                conn.close()
+                m_db = Mongodb(app=current_app)
+                # conn, db = create_new_conn_db()
+                header_reader.to_mongodb(database=m_db.db)
+                m_db.close()
                 print('line config to mongodb done.')
                 os._exit(0)
             else:

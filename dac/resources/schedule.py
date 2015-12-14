@@ -57,12 +57,12 @@ class DateScheduleList(Resource, ScheduleMixin):
         try:
             pid = os.fork()
             if pid == 0:
-                from dac.data_center.database import create_new_conn_db
+                from dac.data_center.database import Mongodb
                 from dac.data_center.csv.reader import ScheduleCSVReader
-                conn, db = create_new_conn_db()
+                m_db = Mongodb(app=current_app)
                 schedule_reader = ScheduleCSVReader(full_file_name, plan_or_real)
-                schedule_reader.to_mongodb(database=db)
-                conn.close()
+                schedule_reader.to_mongodb(database=m_db.db)
+                m_db.close()
                 print('{} schedule to mongodb done.'.format(plan_or_real))
                 os._exit(0)
             else:

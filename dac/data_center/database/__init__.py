@@ -9,7 +9,6 @@
 """
 # from functools import wraps
 from pymongo import MongoClient
-# from pymongo.database import Database
 from dac.config import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
 
 
@@ -24,12 +23,51 @@ def _connect_mongo(host, port, username=None, password=None, db=None):
 
     return conn, conn[db]
 
-db = _connect_mongo(MONGODB_HOST, MONGODB_PORT, db=MONGODB_DB)[1]
 
+class Mongodb(object):
+    def __init__(self, app=None):
+        self.db_host = MONGODB_HOST
+        self.db_port = MONGODB_PORT
+        self.db_name = MONGODB_DB
+        self._conn = None
+        self._db = None
+        if app is not None:
+            self.init_app(app)
 
-def create_new_conn_db():
-    return _connect_mongo(MONGODB_HOST, MONGODB_PORT, db=MONGODB_DB)
+    def init_app(self, app):
+        if "MONGODB_HOST" in app.config:
+            self.db_host = app.config["MONGODB_HOST"]
 
+        if "MONGODB_PORT" in app.config:
+            self.db_port = app.config["MONGODB_PORT"]
+
+        if "MONGODB_DB" in app.config:
+            self.db_name = app.config["MONGODB_DB"]
+
+        self._conn, self._db = _connect_mongo(self.db_host, self.db_port, db=self.db_name)
+
+    @property
+    def db(self):
+        return self._db
+
+    def close(self):
+        try:
+            _conn = self._conn
+            """:type _conn: MongoClient"""
+            _conn.close()
+        except Exception as e:
+            print("MONGODB ERROR", e)
+
+    def __getitem__(self, item):
+        return self.db[item]
+
+    def __getattr__(self, item):
+        try:
+            return object.__getattribute__(item)
+        except:
+            return getattr(self.db, item)
+
+db = Mongodb()
 
 # def close_db(*dbs):
 #     if dbs is None or len(dbs) == 0:
