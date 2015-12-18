@@ -8,8 +8,10 @@
     :license: GNU, see LICENSE for more details.
 """
 # from functools import wraps
+from abc import ABCMeta, abstractmethod
 from pymongo import MongoClient
 from dac.config import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
+from dac.common.exceptions import NoDataError
 
 
 def _connect_mongo(host, port, username=None, password=None, db=None):
@@ -66,6 +68,34 @@ class Mongodb(object):
             return object.__getattribute__(item)
         except:
             return getattr(self.db, item)
+
+
+class MongodbReader(object, metaclass=ABCMeta):
+    def __init__(self):
+        self.data_frame = None
+
+    def __load_frame__(self, collection, *args, **kwargs):
+        """Load data frame, if no data Raise NoDataError"""
+        _collection = db[collection]
+        ret = list(_collection.find(*args, **kwargs))
+        if ret is None or len(ret) == 0:
+            raise NoDataError(collection, *args, **kwargs)
+
+        self.data_frame = pd.DataFrame(ret, dtype=object)
+        try:
+            del self.data_frame['_id']
+        except KeyError:
+            pass
+
+    @staticmethod
+    def __exists__(collection, *args, **kwargs):
+        _collection = db[collection]
+        result = _collection.count(*args, **kwargs)
+        return result > 0
+
+    @abstractmethod
+    def load_frame(self, *args, **kwargs): pass
+
 
 db = Mongodb()
 

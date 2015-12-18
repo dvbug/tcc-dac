@@ -1,7 +1,7 @@
 # coding: utf-8
 """
-    tcc-dac.data_center.cache.redis_cache
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    tcc-dac.data_center.cache.redis
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     tcc-dac data_center cache for redis module.
     :copyright: (c) 2015 by Vito.

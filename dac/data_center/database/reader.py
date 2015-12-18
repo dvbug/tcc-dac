@@ -14,40 +14,11 @@
 import os
 import time
 import pandas as pd
-from abc import ABCMeta, abstractmethod
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
-from .import db
-from dac.data_center.cache.redis_cache import RedisCache, ScheduleCache
-from dac.common.exceptions import NoDataError
+from . import MongodbReader
+from dac.data_center.cache.redis import RedisCache, ScheduleCache
 from dac.config import LINE_DATA_UPLOADS_DEFAULT_URL
-
-
-class MongodbReader(object, metaclass=ABCMeta):
-    def __init__(self):
-        self.data_frame = None
-
-    def __load_frame__(self, collection, *args, **kwargs):
-        """Load data frame, if no data Raise NoDataError"""
-        _collection = db[collection]
-        ret = list(_collection.find(*args, **kwargs))
-        if ret is None or len(ret) == 0:
-            raise NoDataError(collection, *args, **kwargs)
-
-        self.data_frame = pd.DataFrame(ret, dtype=object)
-        try:
-            del self.data_frame['_id']
-        except KeyError:
-            pass
-
-    @staticmethod
-    def __exists__(collection, *args, **kwargs):
-        _collection = db[collection]
-        result = _collection.count(*args, **kwargs)
-        return result > 0
-
-    @abstractmethod
-    def load_frame(self, *args, **kwargs): pass
 
 
 class LineConfigMongodbReader(MongodbReader):
@@ -245,3 +216,14 @@ class ScheduleMongodbReader(MongodbReader):
                 time_list.append('-')
 
         return time_list
+
+
+class SectionMongodbReader(MongodbReader):
+    """Section data reader."""
+    def __init__(self):
+        super(SectionMongodbReader, self).__init__()
+        pass
+
+    def load_frame(self, *args, **kwargs):
+        pass
+

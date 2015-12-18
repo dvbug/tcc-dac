@@ -11,7 +11,7 @@ import os
 from flask_restful import Resource, current_app, reqparse
 from flask_json import as_json_p
 from . import ScheduleMixin, make_json_response, make_json_response_2
-from dac.data_center.cache.redis_cache import ScheduleCache
+from dac.data_center.cache.redis import ScheduleCache
 from dac.common.exceptions import NoDataError
 
 data_cache = ScheduleCache()

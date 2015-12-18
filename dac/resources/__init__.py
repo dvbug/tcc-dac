@@ -9,7 +9,7 @@
 """
 from flask_restful import abort, request
 from dac.common.exceptions import NoDataError
-from dac.data_center.cache.redis_cache import ScheduleCache
+from dac.data_center.cache.redis import ScheduleCache
 from dac.data_center.database.reader import LineConfigMongodbReader, ScheduleMongodbReader
 from dac.config import API_VERSION
 
