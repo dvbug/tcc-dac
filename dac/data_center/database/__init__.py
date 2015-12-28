@@ -10,6 +10,7 @@
 # from functools import wraps
 from abc import ABCMeta, abstractmethod
 from pymongo import MongoClient
+import pandas as pd
 from dac.config import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
 from dac.common.exceptions import NoDataError
 

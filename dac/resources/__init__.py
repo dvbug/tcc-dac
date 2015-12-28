@@ -78,3 +78,9 @@ class LineConfigMixin(object):
     def if_not_exists(line_no):
         if not LineConfigMongodbReader().exists(line_no):
             abort_error_resp(410, line_no=line_no)
+
+
+class SectionMixin(object):
+    @staticmethod
+    def if_not_exists(*args, **kwargs):
+        pass
