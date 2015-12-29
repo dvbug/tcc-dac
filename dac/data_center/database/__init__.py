@@ -72,21 +72,23 @@ class Mongodb(object):
 
 
 class MongodbReader(object, metaclass=ABCMeta):
-    def __init__(self):
-        self.data_frame = None
+    # def __init__(self):
+    #     self.data_frame = None
 
-    def __load_frame__(self, collection, *args, **kwargs):
+    @staticmethod
+    def __load_frame__(collection, *args, **kwargs):
         """Load data frame, if no data Raise NoDataError"""
         _collection = db[collection]
         ret = list(_collection.find(*args, **kwargs))
         if ret is None or len(ret) == 0:
             raise NoDataError(collection, *args, **kwargs)
 
-        self.data_frame = pd.DataFrame(ret, dtype=object)
+        data_frame = pd.DataFrame(ret, dtype=object)
         try:
-            del self.data_frame['_id']
+            del data_frame['_id']
         except KeyError:
             pass
+        return data_frame
 
     @staticmethod
     def __exists__(collection, *args, **kwargs):

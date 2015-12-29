@@ -17,6 +17,7 @@ import pandas as pd
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from . import MongodbReader
+from .section import SectionManager
 from dac.data_center.cache.redis import RedisCache, ScheduleCache
 from dac.config import LINE_DATA_UPLOADS_DEFAULT_URL
 
@@ -25,14 +26,15 @@ class LineConfigMongodbReader(MongodbReader):
     __collection__ = 'line_conf'
 
     def __init__(self):
+        self.data_frame = None
         super(LineConfigMongodbReader, self).__init__()
 
     def load_frame(self, line_no=None):
         """Load data frame, if no data Raise NoDataError"""
         if line_no:
-            self.__load_frame__(self.__collection__, {'line_no': line_no})
+            self.data_frame = self.__load_frame__(self.__collection__, {'line_no': line_no})
         else:
-            self.__load_frame__(self.__collection__)
+            self.data_frame = self.__load_frame__(self.__collection__)
 
         try:
             self.data_frame = self.data_frame.sort_values(['line_no', 'seq'], ascending=[1, 1])  # ascending=True
@@ -104,6 +106,7 @@ class ScheduleMongodbReader(MongodbReader):
         self._type = None  # real or plan
         self._data_list_result = None
         self._data_frame_result = None
+        self.data_frame = None
         self._header_reader = LineConfigMongodbReader()
         self.header = []
         self.ordered_stn = []
@@ -119,7 +122,7 @@ class ScheduleMongodbReader(MongodbReader):
         if self._type not in self.__collections__.keys():
             raise ValueError('Invalid param of {}'.format(plan_or_real))
 
-        self.__load_frame__(self.__collections__[self._type], {'$and': [
+        self.data_frame = self.__load_frame__(self.__collections__[self._type], {'$and': [
             {'line_no': line_no},
             {'date': date}
         ]})
@@ -219,11 +222,49 @@ class ScheduleMongodbReader(MongodbReader):
 
 
 class SectionMongodbReader(MongodbReader):
+    __collections__ = ScheduleMongodbReader.__collections__
+    __types__ = __collections__.keys()
+
     """Section data reader."""
     def __init__(self):
+        self._ordered_stations = []  # [(seq,stn_id), ...]
+        self._data_frames = {}
+        self._data_sections = {}  # key : _type PLAN, REAL
+        self._line_no = None
+        self._str_start_time = None
+        self._str_end_time = None
         super(SectionMongodbReader, self).__init__()
         pass
 
-    def load_frame(self, *args, **kwargs):
-        pass
+    def load_frame(self, line_no, date):
+        self._line_no = line_no
+        # self._str_start_time = str_start_time
+        # self._str_end_time = str_end_time
+        header_reader = LineConfigMongodbReader()
+        header_reader.load_frame(line_no)
+        self._ordered_stations = header_reader.get_ascending_stations()
+        del header_reader
 
+        for _type in self.__types__:
+            self._data_frames[_type] = self.__load_frame__(self.__collections__[_type], {'$and': [
+                {'line_no': line_no},
+                {'date': date}
+            ]})
+
+            self._data_sections[_type] = SectionManager([line_no, ])
+
+    def _gen_data(self, line_no):
+        for _type in self.__types__:
+            pool = Pool(4)
+            records = list()
+            df_trip_groups = self._data_frames[_type].groupby('trip')
+
+            results = pool.map_async(self._gen_trip_data, df_trip_groups).get(1020)
+            pool.close()
+            pool.join()
+            records.extend(results)
+            # TODO
+
+    def _gen_trip_data(self, *args):
+        trip, train_frame = args[0]
+        # TODO
