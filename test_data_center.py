@@ -78,4 +78,12 @@ if __name__ == '__main__':
     # reader.to_csv("dac/static/schedules/TEMP_REAL_201407020000_20140702074500.csv")
     #
 
-    pass
+    from dac.data_center.database import _connect_mongo
+    from dac.data_center.database.reader import SectionMongodbReader
+    conn, db = _connect_mongo('192.168.1.91', 20000, database='tccdevdb')
+    reader = SectionMongodbReader()
+    reader.init_db(db)
+    reader.load_frame('01', '20140702')
+
+    print(reader)
+    # pass

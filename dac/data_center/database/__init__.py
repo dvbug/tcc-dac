@@ -15,16 +15,16 @@ from dac.config import MONGODB_HOST, MONGODB_PORT, MONGODB_DB
 from dac.common.exceptions import NoDataError
 
 
-def _connect_mongo(host, port, username=None, password=None, db=None):
+def _connect_mongo(host, port, username=None, password=None, database=None):
     """ A util for making a connection to mongodb """
-    db = db or 'test'
+    database = database or 'test'
     if username and password:
-        mongo_uri = 'mongodb://%s:%s@%s:%s/%s' % (username, password, host, port, db)
+        mongo_uri = 'mongodb://%s:%s@%s:%s/%s' % (username, password, host, port, database)
         conn = MongoClient(mongo_uri)
     else:
         conn = MongoClient(host, port)
 
-    return conn, conn[db]
+    return conn, conn[database]
 
 
 class Mongodb(object):
@@ -72,13 +72,16 @@ class Mongodb(object):
 
 
 class MongodbReader(object, metaclass=ABCMeta):
-    # def __init__(self):
-    #     self.data_frame = None
+    def __init__(self):
+        # self.data_frame = None
+        self._db = db
 
-    @staticmethod
-    def __load_frame__(collection, *args, **kwargs):
+    def init_db(self, database):
+        self._db = database
+
+    def __load_frame__(self, collection, *args, **kwargs):
         """Load data frame, if no data Raise NoDataError"""
-        _collection = db[collection]
+        _collection = self._db[collection]
         ret = list(_collection.find(*args, **kwargs))
         if ret is None or len(ret) == 0:
             raise NoDataError(collection, *args, **kwargs)
@@ -90,9 +93,8 @@ class MongodbReader(object, metaclass=ABCMeta):
             pass
         return data_frame
 
-    @staticmethod
-    def __exists__(collection, *args, **kwargs):
-        _collection = db[collection]
+    def __exists__(self, collection, *args, **kwargs):
+        _collection = self._db[collection]
         result = _collection.count(*args, **kwargs)
         return result > 0
 

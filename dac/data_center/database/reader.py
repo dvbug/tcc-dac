@@ -16,6 +16,8 @@ import time
 import pandas as pd
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
+from itertools import repeat
+from functools import partial
 from . import MongodbReader
 from .section import SectionManager
 from dac.data_center.cache.redis import RedisCache, ScheduleCache
@@ -61,9 +63,8 @@ class LineConfigMongodbReader(MongodbReader):
         # data_frame is ordered, ascending
         return self.data_frame.loc[:, ['seq', 'stn_id']].to_records(index=False)
 
-    @staticmethod
-    def exists(line_no):
-        return MongodbReader.__exists__(LineConfigMongodbReader.__collection__, {'line_no': line_no})
+    def exists(self, line_no):
+        return self.__exists__(LineConfigMongodbReader.__collection__, {'line_no': line_no})
 
     # def get_raw_data(self):
     #     data = self.data_frame.to_dict(orient='records')
@@ -221,6 +222,23 @@ class ScheduleMongodbReader(MongodbReader):
         return time_list
 
 
+def section_generator(stations, loop=False):
+    import collections
+    if isinstance(stations, collections.Iterable):
+        stations = list(stations)
+
+    count = len(stations)
+    for i in range(0, count-1, 1):
+        yield stations[i], stations[i+1]
+    if loop:
+        yield stations[-1], stations[0]
+
+
+def get_single_v(s, ln, count):
+    for i in range(count):
+        yield s, ln
+
+
 class SectionMongodbReader(MongodbReader):
     __collections__ = ScheduleMongodbReader.__collections__
     __types__ = __collections__.keys()
@@ -241,6 +259,7 @@ class SectionMongodbReader(MongodbReader):
         # self._str_start_time = str_start_time
         # self._str_end_time = str_end_time
         header_reader = LineConfigMongodbReader()
+        header_reader.init_db(self._db)
         header_reader.load_frame(line_no)
         self._ordered_stations = header_reader.get_ascending_stations()
         del header_reader
@@ -252,19 +271,53 @@ class SectionMongodbReader(MongodbReader):
             ]})
 
             self._data_sections[_type] = SectionManager([line_no, ])
+        self._gen_data(line_no)
 
     def _gen_data(self, line_no):
         for _type in self.__types__:
-            pool = Pool(4)
-            records = list()
             df_trip_groups = self._data_frames[_type].groupby('trip')
+            sm = self._data_sections[_type]
+            # pool = Pool()
 
-            results = pool.map_async(self._gen_trip_data, df_trip_groups).get(1020)
-            pool.close()
-            pool.join()
-            records.extend(results)
-            # TODO
+            # b = map(self._gen_trip_data, df_trip_groups, a)
+            # b = pool.map_async(partial(self._gen_trip_data, line_no=line_no), df_trip_groups).get(200)
+            # b = pool.map_async(self._gen_trip_data, df_trip_groups).get(200)
+            # pool.close()
+            # pool.join()
+            b = map(partial(self._gen_trip_data, sm=sm, line_no=line_no), df_trip_groups)
+            # TODO too slowly.
+            print(list(b))
 
-    def _gen_trip_data(self, *args):
-        trip, train_frame = args[0]
-        # TODO
+    # def _gen_trip_data(self, *args):
+    #     trip, train_frame = args[0]
+    #     results = []
+    #     # sm, line_no = second_arg
+    #     trip_records = self._gen_trip_record_data(trip, train_frame)
+    #     for d in trip_records:
+    #         # sm.add_record(line_no, *d)
+    #         # results.append((line_no,)+d)
+    #         results.append(d)
+    #     return results
+    def _gen_trip_data(self, trip_group, sm, line_no):
+        trip, train_frame = trip_group
+
+        trip_records = self._gen_trip_record_data(trip, train_frame)
+        for d in trip_records:
+            sm.add_record(line_no, *d)
+
+    def _gen_trip_record_data(self, trip, train_frame):
+        stn_col = train_frame['stn_id']
+
+        for tuple_stn1, tuple_stn2 in section_generator(self._ordered_stations):
+            idx1, stn1 = tuple_stn1
+            idx2, stn2 = tuple_stn2
+            # find row in train_frame where stn_id == stn1 / stn2
+            stn1_row = train_frame[stn_col == stn1]
+            stn2_row = train_frame[stn_col == stn2]
+            if len(stn1_row) == 1 and len(stn2_row) == 1:
+                stn1_row = stn1_row.iloc(0)[0]
+                stn2_row = stn2_row.iloc(0)[0]
+                if stn1_row['direction'] == '1':
+                    yield trip, stn1, stn2, stn1_row['direction'], stn1_row['dep_time'], stn2_row['arr_time']
+                else:
+                    yield trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']
