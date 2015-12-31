@@ -15,7 +15,8 @@ import os
 import time
 import pandas as pd
 # from multiprocessing.dummy import Pool as ThreadPool
-from multiprocessing import Pool
+# from multiprocessing import Pool
+import multiprocessing as mp
 from itertools import repeat
 from functools import partial
 from . import MongodbReader
@@ -156,7 +157,7 @@ class ScheduleMongodbReader(MongodbReader):
 
     def _get_data(self):
         # pool = ThreadPool(10)
-        pool = Pool(4)
+        pool = mp.Pool(4)
 
         line_trains_records = list()
 
@@ -246,6 +247,7 @@ class SectionMongodbReader(MongodbReader):
     """Section data reader."""
     def __init__(self):
         self._ordered_stations = []  # [(seq,stn_id), ...]
+        self._sections = []
         self._data_frames = {}
         self._data_sections = {}  # key : _type PLAN, REAL
         self._line_no = None
@@ -262,6 +264,7 @@ class SectionMongodbReader(MongodbReader):
         header_reader.init_db(self._db)
         header_reader.load_frame(line_no)
         self._ordered_stations = header_reader.get_ascending_stations()
+        self._sections = list(section_generator(self._ordered_stations))
         del header_reader
 
         for _type in self.__types__:
@@ -271,44 +274,61 @@ class SectionMongodbReader(MongodbReader):
             ]})
 
             self._data_sections[_type] = SectionManager([line_no, ])
-        self._gen_data(line_no)
+        # self._gen_data(line_no)
+        self._genAAA()
+
+    def _genAAA(self):
+        pool = mp.Pool(2)
+        l = [1,2,4,5,6]
+        res = pool.map(self.sum, l)
+        # res = map(self.sum, l)
+        pool.close()
+        pool.join()
+        res = list(res)
+        print(res)
+
+    def sum(self, arg):
+        return arg+100
 
     def _gen_data(self, line_no):
+        pool = mp.Pool(4)
         for _type in self.__types__:
             df_trip_groups = self._data_frames[_type].groupby('trip')
             sm = self._data_sections[_type]
-            # pool = Pool()
 
-            # b = map(self._gen_trip_data, df_trip_groups, a)
-            # b = pool.map_async(partial(self._gen_trip_data, line_no=line_no), df_trip_groups).get(200)
-            # b = pool.map_async(self._gen_trip_data, df_trip_groups).get(200)
-            # pool.close()
-            # pool.join()
-            b = map(partial(self._gen_trip_data, sm=sm, line_no=line_no), df_trip_groups)
-            # TODO too slowly.
-            print(list(b))
+            # b = pool.map(partial(self._gen_trip_data, line_no=line_no), df_trip_groups)
+            b = pool.map(self._gen_trip_data, df_trip_groups)
+            # b = pool.map(lambda x, y: x+y, [(1, 2), (3, 4)])
+            # b = map(partial(self._gen_trip_data, sm=sm, line_no=line_no), df_trip_groups)
+            # b = map(partial(self._gen_trip_data, line_no=line_no), df_trip_groups)
+            b = list(b)
+            print('Done')
+        pool.close()
+        pool.join()
 
-    # def _gen_trip_data(self, *args):
-    #     trip, train_frame = args[0]
+    def _gen_trip_data(self, *args):
+        trip, train_frame = args[0]
+        trip_records = self._gen_trip_record_data(trip, train_frame)
+        return list(trip_records)
+    # def _gen_trip_data(self, trip_group, line_no):
+    #     trip, train_frame = trip_group
     #     results = []
-    #     # sm, line_no = second_arg
     #     trip_records = self._gen_trip_record_data(trip, train_frame)
     #     for d in trip_records:
-    #         # sm.add_record(line_no, *d)
-    #         # results.append((line_no,)+d)
-    #         results.append(d)
+    #         results.append((line_no,)+d)
+    #
     #     return results
-    def _gen_trip_data(self, trip_group, sm, line_no):
-        trip, train_frame = trip_group
-
-        trip_records = self._gen_trip_record_data(trip, train_frame)
-        for d in trip_records:
-            sm.add_record(line_no, *d)
+    # def _gen_trip_data(self, trip_group, sm, line_no):
+    #     trip, train_frame = trip_group
+    #
+    #     trip_records = self._gen_trip_record_data(trip, train_frame)
+    #     for d in trip_records:
+    #         sm.add_record(line_no, *d)
 
     def _gen_trip_record_data(self, trip, train_frame):
         stn_col = train_frame['stn_id']
 
-        for tuple_stn1, tuple_stn2 in section_generator(self._ordered_stations):
+        for tuple_stn1, tuple_stn2 in self._sections:
             idx1, stn1 = tuple_stn1
             idx2, stn2 = tuple_stn2
             # find row in train_frame where stn_id == stn1 / stn2
