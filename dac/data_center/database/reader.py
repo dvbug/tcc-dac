@@ -242,7 +242,7 @@ def get_single_v(s, ln, count):
 
 class SectionMongodbReader(MongodbReader):
     __collections__ = ScheduleMongodbReader.__collections__
-    __types__ = __collections__.keys()
+    __types__ = list(__collections__.keys())
 
     """Section data reader."""
     def __init__(self):
@@ -254,7 +254,6 @@ class SectionMongodbReader(MongodbReader):
         self._str_start_time = None
         self._str_end_time = None
         super(SectionMongodbReader, self).__init__()
-        pass
 
     def load_frame(self, line_no, date):
         self._line_no = line_no
@@ -274,60 +273,33 @@ class SectionMongodbReader(MongodbReader):
             ]})
 
             self._data_sections[_type] = SectionManager([line_no, ])
-        # self._gen_data(line_no)
-        self._genAAA()
-
-    def _genAAA(self):
-        pool = mp.Pool(2)
-        l = [1,2,4,5,6]
-        res = pool.map(self.sum, l)
-        # res = map(self.sum, l)
-        pool.close()
-        pool.join()
-        res = list(res)
-        print(res)
-
-    def sum(self, arg):
-        return arg+100
+        self._gen_data(line_no)
 
     def _gen_data(self, line_no):
-        pool = mp.Pool(4)
+
         for _type in self.__types__:
             df_trip_groups = self._data_frames[_type].groupby('trip')
             sm = self._data_sections[_type]
+            """:type sm: SectionManager"""
+            pool = mp.Pool(2)
+            trips_data = []
+            results = map(self._gen_trip_data, df_trip_groups)
+            pool.close()
+            pool.join()
+            trips_data.extend(results)
+            for trip in trips_data:
+                for d in trip:
+                    sm.add_record(line_no, *d)
+        print('Done')
 
-            # b = pool.map(partial(self._gen_trip_data, line_no=line_no), df_trip_groups)
-            b = pool.map(self._gen_trip_data, df_trip_groups)
-            # b = pool.map(lambda x, y: x+y, [(1, 2), (3, 4)])
-            # b = map(partial(self._gen_trip_data, sm=sm, line_no=line_no), df_trip_groups)
-            # b = map(partial(self._gen_trip_data, line_no=line_no), df_trip_groups)
-            b = list(b)
-            print('Done')
-        pool.close()
-        pool.join()
-
-    def _gen_trip_data(self, *args):
-        trip, train_frame = args[0]
+    def _gen_trip_data(self, trip_group):
+        trip, train_frame = trip_group
         trip_records = self._gen_trip_record_data(trip, train_frame)
-        return list(trip_records)
-    # def _gen_trip_data(self, trip_group, line_no):
-    #     trip, train_frame = trip_group
-    #     results = []
-    #     trip_records = self._gen_trip_record_data(trip, train_frame)
-    #     for d in trip_records:
-    #         results.append((line_no,)+d)
-    #
-    #     return results
-    # def _gen_trip_data(self, trip_group, sm, line_no):
-    #     trip, train_frame = trip_group
-    #
-    #     trip_records = self._gen_trip_record_data(trip, train_frame)
-    #     for d in trip_records:
-    #         sm.add_record(line_no, *d)
+        return trip_records
 
     def _gen_trip_record_data(self, trip, train_frame):
         stn_col = train_frame['stn_id']
-
+        result = []
         for tuple_stn1, tuple_stn2 in self._sections:
             idx1, stn1 = tuple_stn1
             idx2, stn2 = tuple_stn2
@@ -338,6 +310,9 @@ class SectionMongodbReader(MongodbReader):
                 stn1_row = stn1_row.iloc(0)[0]
                 stn2_row = stn2_row.iloc(0)[0]
                 if stn1_row['direction'] == '1':
-                    yield trip, stn1, stn2, stn1_row['direction'], stn1_row['dep_time'], stn2_row['arr_time']
+                    result.append(
+                        (trip, stn1, stn2, stn1_row['direction'], stn1_row['dep_time'], stn2_row['arr_time']))
                 else:
-                    yield trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']
+                    result.append(
+                        (trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']))
+        return result
