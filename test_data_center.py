@@ -43,12 +43,14 @@ class CSVTimeGenMetaclass(type):
 
 def test_section():
     from dac.data_center.database import _connect_mongo
-    from dac.data_center.database.reader import SectionMongodbReader
+    from dac.data_center.database.section import SectionDataGenerator
     conn, db = _connect_mongo('192.168.1.91', 20000, database='tccdevdb')
-    reader = SectionMongodbReader()
-    reader.init_db(db)
-    reader.load_frame('01', '20140702')
-    print(reader)
+    SectionDataGenerator.__reader__.init_db(conn)
+    SectionDataGenerator.__reader__.init_db(db)
+    sd = SectionDataGenerator.get_sections_data('01', '20140702')
+    # conn.close()
+
+    print(sd._data_sections)
 
 
 if __name__ == '__main__':

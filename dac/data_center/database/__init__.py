@@ -53,6 +53,10 @@ class Mongodb(object):
     def db(self):
         return self._db
 
+    @property
+    def conn(self):
+        return self._conn
+
     def close(self):
         try:
             _conn = self._conn
@@ -74,10 +78,14 @@ class Mongodb(object):
 class MongodbReader(object, metaclass=ABCMeta):
     def __init__(self):
         # self.data_frame = None
-        self._db = db
+        self._db = db.db
+        self._conn = db.conn
 
     def init_db(self, database):
         self._db = database
+
+    def init_conn(self, conn):
+        self._conn = conn
 
     def __load_frame__(self, collection, *args, **kwargs):
         """Load data frame, if no data Raise NoDataError"""

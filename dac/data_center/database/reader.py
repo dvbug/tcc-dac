@@ -19,8 +19,8 @@ import pandas as pd
 import multiprocessing as mp
 from itertools import repeat
 from functools import partial
+from itertools import chain
 from . import MongodbReader
-from .section import SectionManager
 from dac.data_center.cache.redis import RedisCache, ScheduleCache
 from dac.config import LINE_DATA_UPLOADS_DEFAULT_URL
 
@@ -223,96 +223,89 @@ class ScheduleMongodbReader(MongodbReader):
         return time_list
 
 
-def section_generator(stations, loop=False):
-    import collections
-    if isinstance(stations, collections.Iterable):
-        stations = list(stations)
-
-    count = len(stations)
-    for i in range(0, count-1, 1):
-        yield stations[i], stations[i+1]
-    if loop:
-        yield stations[-1], stations[0]
-
-
-def get_single_v(s, ln, count):
-    for i in range(count):
-        yield s, ln
-
-
-class SectionMongodbReader(MongodbReader):
-    __collections__ = ScheduleMongodbReader.__collections__
-    __types__ = list(__collections__.keys())
-
-    """Section data reader."""
-    def __init__(self):
-        self._ordered_stations = []  # [(seq,stn_id), ...]
-        self._sections = []
-        self._data_frames = {}
-        self._data_sections = {}  # key : _type PLAN, REAL
-        self._line_no = None
-        self._str_start_time = None
-        self._str_end_time = None
-        super(SectionMongodbReader, self).__init__()
-
-    def load_frame(self, line_no, date):
-        self._line_no = line_no
-        # self._str_start_time = str_start_time
-        # self._str_end_time = str_end_time
-        header_reader = LineConfigMongodbReader()
-        header_reader.init_db(self._db)
-        header_reader.load_frame(line_no)
-        self._ordered_stations = header_reader.get_ascending_stations()
-        self._sections = list(section_generator(self._ordered_stations))
-        del header_reader
-
-        for _type in self.__types__:
-            self._data_frames[_type] = self.__load_frame__(self.__collections__[_type], {'$and': [
-                {'line_no': line_no},
-                {'date': date}
-            ]})
-
-            self._data_sections[_type] = SectionManager([line_no, ])
-        self._gen_data(line_no)
-
-    def _gen_data(self, line_no):
-
-        for _type in self.__types__:
-            df_trip_groups = self._data_frames[_type].groupby('trip')
-            sm = self._data_sections[_type]
-            """:type sm: SectionManager"""
-            pool = mp.Pool(2)
-            trips_data = []
-            results = map(self._gen_trip_data, df_trip_groups)
-            pool.close()
-            pool.join()
-            trips_data.extend(results)
-            for trip in trips_data:
-                for d in trip:
-                    sm.add_record(line_no, *d)
-        print('Done')
-
-    def _gen_trip_data(self, trip_group):
-        trip, train_frame = trip_group
-        trip_records = self._gen_trip_record_data(trip, train_frame)
-        return trip_records
-
-    def _gen_trip_record_data(self, trip, train_frame):
-        stn_col = train_frame['stn_id']
-        result = []
-        for tuple_stn1, tuple_stn2 in self._sections:
-            idx1, stn1 = tuple_stn1
-            idx2, stn2 = tuple_stn2
-            # find row in train_frame where stn_id == stn1 / stn2
-            stn1_row = train_frame[stn_col == stn1]
-            stn2_row = train_frame[stn_col == stn2]
-            if len(stn1_row) == 1 and len(stn2_row) == 1:
-                stn1_row = stn1_row.iloc(0)[0]
-                stn2_row = stn2_row.iloc(0)[0]
-                if stn1_row['direction'] == '1':
-                    result.append(
-                        (trip, stn1, stn2, stn1_row['direction'], stn1_row['dep_time'], stn2_row['arr_time']))
-                else:
-                    result.append(
-                        (trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']))
-        return result
+# def section_generator(stations, loop=False):
+#     import collections
+#     if isinstance(stations, collections.Iterable):
+#         stations = list(stations)
+#
+#     count = len(stations)
+#     for i in range(0, count-1, 1):
+#         yield stations[i], stations[i+1]
+#     if loop:
+#         yield stations[-1], stations[0]
+#
+#
+# class SectionMongodbReader(MongodbReader):
+#     __collections__ = ScheduleMongodbReader.__collections__
+#     __types__ = list(__collections__.keys())
+#
+#     """Section data reader."""
+#     def __init__(self):
+#         self._ordered_stations = []  # [(seq,stn_id), ...]
+#         self._sections = []
+#         # self._data_frames = {}
+#         self._data_sections = {}  # key : _type PLAN, REAL
+#         for _type in self.__types__:
+#             self._data_sections[_type] = SectionManager()
+#
+#         super(SectionMongodbReader, self).__init__()
+#
+#     def load_frame(self, line_no, date):
+#         header_reader = LineConfigMongodbReader()
+#         header_reader.init_db(self._db)
+#         header_reader.load_frame(line_no)
+#         self._ordered_stations = header_reader.get_ascending_stations()
+#         self._sections = list(section_generator(self._ordered_stations))
+#         del header_reader
+#
+#         data_frames = {}
+#         for _type in self.__types__:
+#             data_frames[_type] = self.__load_frame__(self.__collections__[_type], {'$and': [
+#                 {'line_no': line_no},
+#                 {'date': date}
+#             ]})
+#
+#         self._gen_data(line_no, data_frames)
+#
+#     def _gen_data(self, line_no, data_frames):
+#
+#         for _type in self.__types__:
+#             df_trip_groups = data_frames[_type].groupby('trip')
+#             sm = self._data_sections[_type]
+#             """:type sm: SectionManager"""
+#             pool = mp.Pool(2)
+#             trips_data = []
+#             results = pool.map(self._gen_trip_data, df_trip_groups)
+#             pool.close()
+#             pool.join()
+#             trips_data.extend(results)
+#             trips_data = list(chain(*trips_data))
+#             for d in trips_data:
+#                 sm.add_record(line_no, *d)
+#
+#         print('Done')
+#
+#     def _gen_trip_data(self, trip_group):
+#         trip, train_frame = trip_group
+#         trip_records = self._gen_trip_record_data(trip, train_frame)
+#         return trip_records
+#
+#     def _gen_trip_record_data(self, trip, train_frame):
+#         stn_col = train_frame['stn_id']
+#         result = []
+#         for tuple_stn1, tuple_stn2 in self._sections:
+#             idx1, stn1 = tuple_stn1
+#             idx2, stn2 = tuple_stn2
+#             # find row in train_frame where stn_id == stn1 / stn2
+#             stn1_row = train_frame[stn_col == stn1]
+#             stn2_row = train_frame[stn_col == stn2]
+#             if len(stn1_row) == 1 and len(stn2_row) == 1:
+#                 stn1_row = stn1_row.iloc(0)[0]
+#                 stn2_row = stn2_row.iloc(0)[0]
+#                 if stn1_row['direction'] == '1':
+#                     result.append(
+#                         (trip, stn1, stn2, stn1_row['direction'], stn1_row['dep_time'], stn2_row['arr_time']))
+#                 else:
+#                     result.append(
+#                         (trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']))
+#         return result
