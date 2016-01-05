@@ -82,5 +82,6 @@ class LineConfigMixin(object):
 
 class SectionMixin(object):
     @staticmethod
-    def if_not_exists(*args, **kwargs):
-        pass
+    def if_not_exists(line_no, date, sections_data):
+        if len(sections_data) == 0:
+            abort_error_resp(410, line_no=line_no, date=date)

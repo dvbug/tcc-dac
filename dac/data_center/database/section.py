@@ -242,3 +242,20 @@ class SectionDataGenerator(object):
                         (trip, stn2, stn1, stn2_row['direction'], stn2_row['dep_time'], stn1_row['arr_time']))
         return result
 
+
+class SectionTripCounter(object):
+    __types__ = SectionMongodbReader.__types__
+
+    def __init__(self, date, data_sections):
+        time_format = "%Y%m%d%H%M%S"
+        self._dt_end = time.strptime(date + '230000', time_format)
+        self._dt_begin = time.strptime(date + '050000', time_format)
+
+        self._data_sections = data_sections
+
+    def get_count(self, time_delta):
+        """:type time_delta: datetime.timedelta"""
+        for _type in SectionTripCounter.__types__:
+            sm = self._data_sections[_type]
+            """:type sm: SectionManager"""
+
