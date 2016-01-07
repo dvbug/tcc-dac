@@ -253,6 +253,7 @@ class SectionTripCounter(object):
 
         self._data_sections = data_sections
 
+
     def get_count(self, time_delta):
         """:type time_delta: datetime.timedelta"""
         for _type in SectionTripCounter.__types__:
