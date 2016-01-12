@@ -50,7 +50,7 @@ def test_section():
     sd = SectionDataGenerator.get_sections_data('01', '20140702')
     # conn.close()
 
-    print(sd._data_sections)
+    print(sd.data_sections)
 
 
 if __name__ == '__main__':

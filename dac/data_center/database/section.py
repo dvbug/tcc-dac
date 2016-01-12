@@ -53,6 +53,10 @@ class Section(object):
         return self._line
 
     @property
+    def section_name(self):
+        return self._section_name
+
+    @property
     def direction(self):
         return self._direction
 
@@ -103,8 +107,9 @@ class SectionLine(object):
         return Section(self._line, direction, section_name)
 
     def get_all_sections_from_direction(self, direction):
+        """Returns sectionPair data lick: section_name: section."""
         if direction in self._sections_by_direction:
-            return self._sections_by_direction[direction]
+            return self._sections_by_direction[direction]  # section_name: section
         return {}
 
 
@@ -142,6 +147,13 @@ def section_generator(stations, loop=False):
         yield stations[-1], stations[0]
 
 
+def format_period(period):
+    dt_s = period[0]
+    dt_e = period[1]
+    return '{} - {}'.format(dt_s.datetime.strftime('%H:%M:%S'),
+                            dt_e.datetime.strftime('%H:%M:%S'))
+
+
 class SectionMongodbReader(MongodbReader):
     __collections__ = ScheduleMongodbReader.__collections__
     __types__ = list(__collections__.keys())
@@ -167,10 +179,38 @@ class SectionMongodbReader(MongodbReader):
         return sections, data_frames
 
 
+class SectionIter(object):
+    __TYPE_PLAN__ = "PLAN"
+    __TYPE_REAL__ = "REAL"
+
+    def __init__(self, line, data_sections):
+        self._line = line
+        self._data_sections = data_sections
+
+    def iter_sections(self, direction):
+        """Returns tuple (plan_section,real_sections)"""
+        section_manager_plan = self._data_sections[self.__TYPE_PLAN__]
+
+        section_manager_real = self._data_sections[self.__TYPE_REAL__]
+        line_section_plan = section_manager_plan.get_section_line(self._line)
+        """:type line_section_plan: SectionLine"""
+        line_section_real = section_manager_real.get_section_line(self._line)
+        """:type line_section_plan: SectionLine"""
+        plan_sections = line_section_plan.get_all_sections_from_direction(direction)
+        real_sections = line_section_real.get_all_sections_from_direction(direction)
+
+        for section_name, section in plan_sections:
+            if section_name in real_sections:
+                yield section, real_sections[section_name]
+            else:
+                print('[ERROR]: real graph does not hav section: %s' % section_name)
+
+
 class SectionDataGenerator(object):
 
     __cache__ = {}
     __reader__ = SectionMongodbReader()
+    __section_iter__ = SectionIter
 
     def __init__(self, line_no, section_stations, data_frames):
         self._section_stations = section_stations
@@ -180,6 +220,7 @@ class SectionDataGenerator(object):
         for _type in self.__types__:
             self._data_sections[_type] = SectionManager()
         self._gen_data(line_no)
+        self._section_iter = SectionDataGenerator.__section_iter__(line_no, self._data_sections)
 
     @staticmethod
     def get_sections_data(line_no, date):
@@ -192,12 +233,11 @@ class SectionDataGenerator(object):
         if len(sd) == 0:
             d = SectionDataGenerator.__reader__.load_frame(line_no, date)
             generator = SectionDataGenerator(line_no, *d)
-            sd = SectionDataGenerator.__cache__[line_no][date] = generator.data_sections
+            sd = SectionDataGenerator.__cache__[line_no][date] = generator
         return sd
 
-    @property
-    def data_sections(self):
-        return self._data_sections
+    def iter_sections(self, direction):
+        return self._section_iter.iter_sections(direction)
 
     def _gen_data(self, line_no):
         pool = mp.Pool(8)
@@ -244,21 +284,48 @@ class SectionDataGenerator(object):
 
 
 class SectionTripCounter(object):
-    __types__ = SectionMongodbReader.__types__
 
-    def __init__(self, date, data_sections):
+    def __init__(self, date, line, sd: SectionDataGenerator):
         time_format = "%Y%m%d%H%M%S"
         self._dt_end = time.strptime(date + '230000', time_format)
         self._dt_begin = time.strptime(date + '050000', time_format)
+        self._line = line
+        self._sd = sd
 
-        self._data_sections = data_sections
-
-
-    def get_count(self, time_delta):
+    def get_count(self, time_delta, direction=None):
         """:type time_delta: datetime.timedelta"""
-        for _type in SectionTripCounter.__types__:
-            sm = self._data_sections[_type]
-            """:type sm: SectionManager"""
+        results = {}
+        if direction is None:
+            results['up'] = self._gen_count(time_delta, '1')
+            results['down'] = self._gen_count(time_delta, '2')
+        elif direction == '1':
+            results['up'] = self._gen_count(time_delta, '1')
+        elif direction == '2':
+            results['down'] = self._gen_count(time_delta, '2')
+        return results
 
+    def _gen_count(self, time_delta, direction):
 
+        resluts = {}
+        for plan_section, real_section in self._sd.iter_sections(direction):
+            resluts[plan_section.section_name] = {}
 
+            for section_name, period, plan_count, real_count in \
+                    self.compare_section(plan_section, real_section, time_delta):
+
+                resluts[section_name][period] = {'P': plan_count, 'R': real_count}
+        return resluts
+
+    def compare_section(self, plan_section, real_section, time_delta):
+        """Returns Tuple('SectionName', 'Period', PLAN_COUNT, REAL_COUNT)
+        :type time_delta: datetime.timedelta
+        :type plan_section: Section
+        :type real_section: Section
+        """
+
+        dt1 = self._dt_begin
+        while dt1 < self._dt_end:
+            dt2 = dt1 + time_delta
+            plan_count = plan_section.get_trip_count_from_period(dt1, dt2)
+            real_count = real_section.get_trip_count_from_period(dt1, dt2)
+            yield plan_section.section_name, format_period((dt1, dt2)), plan_count, real_count

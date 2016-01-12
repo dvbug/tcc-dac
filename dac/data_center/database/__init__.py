@@ -36,6 +36,8 @@ class Mongodb(object):
         self._db = None
         if app is not None:
             self.init_app(app)
+        else:
+            self._conn, self._db = _connect_mongo(self.db_host, self.db_port, database=self.db_name)
 
     def init_app(self, app):
         if "MONGODB_HOST" in app.config:
@@ -47,7 +49,7 @@ class Mongodb(object):
         if "MONGODB_DB" in app.config:
             self.db_name = app.config["MONGODB_DB"]
 
-        self._conn, self._db = _connect_mongo(self.db_host, self.db_port, db=self.db_name)
+        self._conn, self._db = _connect_mongo(self.db_host, self.db_port, database=self.db_name)
 
     @property
     def db(self):
@@ -78,14 +80,10 @@ class Mongodb(object):
 class MongodbReader(object, metaclass=ABCMeta):
     def __init__(self):
         # self.data_frame = None
-        self._db = db.db
-        self._conn = db.conn
+        self._db = db
 
     def init_db(self, database):
         self._db = database
-
-    def init_conn(self, conn):
-        self._conn = conn
 
     def __load_frame__(self, collection, *args, **kwargs):
         """Load data frame, if no data Raise NoDataError"""
