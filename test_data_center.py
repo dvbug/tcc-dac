@@ -41,6 +41,18 @@ class CSVTimeGenMetaclass(type):
         return super().__new__(mcs, name, bases, attrs)
 
 
+def test_section():
+    from dac.data_center.database import _connect_mongo
+    from dac.data_center.database.section import SectionDataGenerator
+    conn, db = _connect_mongo('192.168.1.91', 20000, database='tccdevdb')
+    SectionDataGenerator.__reader__.init_db(conn)
+    SectionDataGenerator.__reader__.init_db(db)
+    sd = SectionDataGenerator.get_sections_data('01', '20140702')
+    # conn.close()
+
+    print(sd.data_sections)
+
+
 if __name__ == '__main__':
     # from dac.data_center.csv.reader import LineConfigCSVReader
     # h_csv_reader = LineConfigCSVReader('01', 'dac/static/configs/LINE01_STN_CFG.csv')
@@ -78,4 +90,6 @@ if __name__ == '__main__':
     # reader.to_csv("dac/static/schedules/TEMP_REAL_201407020000_20140702074500.csv")
     #
 
-    pass
+    test_section()
+
+    # pass

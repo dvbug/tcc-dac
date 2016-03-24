@@ -9,7 +9,7 @@
 """
 from flask_restful import abort, request
 from dac.common.exceptions import NoDataError
-from dac.data_center.cache.redis_cache import ScheduleCache
+from dac.data_center.cache.redis import ScheduleCache
 from dac.data_center.database.reader import LineConfigMongodbReader, ScheduleMongodbReader
 from dac.config import API_VERSION
 
@@ -78,3 +78,10 @@ class LineConfigMixin(object):
     def if_not_exists(line_no):
         if not LineConfigMongodbReader().exists(line_no):
             abort_error_resp(410, line_no=line_no)
+
+
+class SectionMixin(object):
+    @staticmethod
+    def if_not_exists(line_no, date, sections_data):
+        if len(sections_data) == 0:
+            abort_error_resp(410, line_no=line_no, date=date)

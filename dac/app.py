@@ -14,6 +14,7 @@ from . import config
 from dac.common.util import JSONEncoder
 from dac.resources.schedule import Schedule, ScheduleList, DateScheduleList
 from dac.resources.line_config import LineConfig, LineConfigList
+from dac.resources.section import SectionTripCounterResource
 from dac.data_center.database import db
 from dac.data_center.cache import redis_client
 
@@ -45,10 +46,14 @@ def create_app(config_override=None):
     api.add_resource(Schedule,
                      '/schedules/<string:date>/<string:line_no>/<string:plan_or_real>/<string:trip>',
                      endpoint='schedule.line.trip')
+
     api.add_resource(LineConfigList, '/configs/lines',
                      endpoint='configs.lines')
     api.add_resource(LineConfig, '/configs/lines/<string:line_no>',
                      endpoint='configs.line')
+
+    api.add_resource(SectionTripCounterResource, '/sections/<string:line_no>/<string:date>/<string:direction>',
+                     endpoint='sections.line')
 
     init_app_index(app, api)
 
